@@ -1,0 +1,63 @@
+# ---- Python ----------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# ---- Environment -----------------------------------------------------------
+.env
+*.env
+!.env.example
+
+# ---- Google Cloud credentials (NEVER commit) --------------------------------
+service-account-key.json
+*-sa-key.json
+application_default_credentials.json
+
+# ---- Node / Frontend -------------------------------------------------------
+node_modules/
+.next/
+dist/
+.cache/
+
+# ---- Terraform -------------------------------------------------------------
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
+terraform/terraform.tfvars
+!terraform/terraform.tfvars.example
+
+# ---- OS --------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# ---- IDE -------------------------------------------------------------------
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# ---- Test artifacts --------------------------------------------------------
+.coverage
+htmlcov/
+coverage.xml
+
+# ---- Docker ----------------------------------------------------------------
+*.dockerignore
+
+# ---- Logs ------------------------------------------------------------------
+*.log
+
+# ---- Internal (private docs, notes, credentials hints) ---------------------
+.internal/
