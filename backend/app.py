@@ -3,14 +3,18 @@ COMPASS FastAPI Application
 Entrypoint for the backend service running on Cloud Run.
 
 Endpoints:
-  WebSocket /ws/live              — Gemini Live API bidirectional audio proxy
-  GET       /api/sessions         — List sessions for authenticated user
-  POST      /api/sessions         — Create a new session
-  GET       /api/sessions/{id}    — Get session state + assessment summary
-  GET       /api/assessments/{id} — Get full control mappings + gaps
-  GET       /api/oscal/{id}/{type}— Get signed OSCAL download URL
-  POST      /api/diagrams         — Upload an architecture diagram
-  GET       /health               — Cloud Run health check
+  WebSocket /ws/live                      — Gemini Live API bidirectional audio proxy
+  POST      /api/chat/{session_id}        — Text chat via Gemini (non-live)
+  POST      /api/agent/{session_id}       — ADK agent pipeline (sub-agent delegation)
+  GET       /api/sessions                 — List sessions for authenticated user
+  POST      /api/sessions                 — Create a new session
+  GET       /api/sessions/{id}            — Get session state + assessment summary
+  GET       /api/assessments/{id}         — Get full control mappings + gaps
+  GET       /api/oscal/{id}/{type}        — Get signed OSCAL download URL
+  POST      /api/diagrams                 — Upload an architecture diagram
+  GET       /api/transcript/{session_id}  — Get conversation transcript
+  GET       /health                       — Cloud Run health check
+  GET       /health/gemini                — Gemini API connectivity check
 """
 from __future__ import annotations
 
@@ -48,13 +52,32 @@ logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------------
-# Gemini client (module-level singleton)
+# Gemini client — supports both Vertex AI and API-key modes
 # ------------------------------------------------------------------
-genai_client = genai.Client(
-    vertexai=True,
-    project=settings.google_cloud_project,
-    location=settings.google_cloud_location,
-)
+def _build_genai_client() -> genai.Client:
+    """Create a google-genai client based on config.
+
+    - If ``google_api_key`` is set (and ``gemini_use_vertex`` is False),
+      use the public Gemini API.  Good for local dev without GCP creds.
+    - Otherwise use Vertex AI (default for Cloud Run with Workload Identity).
+    """
+    if settings.google_api_key and not settings.gemini_use_vertex:
+        logger.info("Gemini client: API-key mode")
+        return genai.Client(api_key=settings.google_api_key)
+
+    logger.info(
+        "Gemini client: Vertex AI mode (project=%s, location=%s)",
+        settings.google_cloud_project,
+        settings.google_cloud_location,
+    )
+    return genai.Client(
+        vertexai=True,
+        project=settings.google_cloud_project,
+        location=settings.google_cloud_location,
+    )
+
+
+genai_client = _build_genai_client()
 
 # ------------------------------------------------------------------
 # Live API config — built once, reused per session
@@ -182,6 +205,24 @@ LIVE_CONFIG = types.LiveConnectConfig(
                         },
                     ),
                 ),
+                types.FunctionDeclaration(
+                    name="validate_oscal",
+                    description="Validate an OSCAL JSON document for structural completeness against NIST OSCAL 1.1.2.",
+                    parameters=types.Schema(
+                        type="OBJECT",
+                        properties={
+                            "content": types.Schema(
+                                type="OBJECT",
+                                description="The full OSCAL JSON document to validate",
+                            ),
+                            "document_type": types.Schema(
+                                type="STRING",
+                                enum=["ssp", "poam", "assessment_results"],
+                            ),
+                        },
+                        required=["content", "document_type"],
+                    ),
+                ),
             ]
         )
     ],
@@ -198,7 +239,24 @@ LIVE_CONFIG = types.LiveConnectConfig(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    logger.info("COMPASS backend starting (project=%s, model=%s)", settings.google_cloud_project, settings.gemini_model)
+    logger.info(
+        "COMPASS backend starting (project=%s, model=%s)",
+        settings.google_cloud_project,
+        settings.gemini_model,
+    )
+    # Validate Gemini connectivity at startup
+    try:
+        probe = await genai_client.aio.models.generate_content(
+            model=settings.gemini_model,
+            contents="Respond with OK.",
+            config=types.GenerateContentConfig(
+                max_output_tokens=5,
+            ),
+        )
+        logger.info("Gemini API connected ✓  (model=%s)", settings.gemini_model)
+    except Exception as exc:
+        logger.error("Gemini API connection FAILED at startup: %s", exc)
+        # Don't crash — the app can still serve health checks and REST reads
     yield
     logger.info("COMPASS backend shutting down")
 
@@ -224,35 +282,109 @@ app.add_middleware(
 # ------------------------------------------------------------------
 
 async def execute_tool(function_name: str, args: dict, session_id: str) -> dict:
-    """Dispatch a Gemini function call to the matching Python tool."""
+    """Dispatch a Gemini function call to the matching Python tool.
+
+    Returns the tool result dict **and** a ``_event`` key with a structured
+    WebSocket event that should be forwarded to the client for real-time UI
+    updates (classification cards, control-mapped tickers, gap alerts, etc.).
+    The caller should pop ``_event`` before sending the result back to Gemini.
+    """
     from backend.tools.classify_system import classify_system_impl
     from backend.tools.control_lookup import control_lookup_impl
     from backend.tools.data_type_mapper import map_data_types_impl
     from backend.tools.gap_analyzer import gap_analysis_impl
     from backend.tools.oscal_generator import generate_oscal_impl
+    from backend.tools.oscal_validator import validate_oscal_impl
     from backend.tools.threat_lookup import threat_lookup_impl
     from backend.tools.vector_search import search_controls_impl
 
     try:
+        # ---- classify_system ----------------------------------------
         if function_name == "classify_system":
             result = classify_system_impl(**args)
-            # Persist classification to Firestore
             await firestore_service.set_classification(session_id, result)
             await firestore_service.set_phase(session_id, "classification")
+            # Update system profile with data types
+            session = await firestore_service.get_session(session_id) or {}
+            profile = session.get("systemProfile", {})
+            profile["data_types"] = result.get("data_types_matched", args.get("data_types", []))
+            if args.get("system_description"):
+                profile["description"] = args["system_description"]
+            await firestore_service.set_system_profile(session_id, profile)
+            result["_event"] = {"type": "classification", "data": result}
             return result
 
+        # ---- search_controls ----------------------------------------
         elif function_name == "search_controls":
-            return search_controls_impl(**args)
+            result = search_controls_impl(**args)
+            # Persist each returned control as a mapping
+            controls = result.get("controls", [])
+            for ctrl in controls:
+                mapping = {
+                    "control_id": ctrl.get("id", ""),
+                    "control_title": ctrl.get("title", ""),
+                    "control_family": ctrl.get("family", ""),
+                    "implementation_status": "not_assessed",
+                    "implementation_description": "",
+                    "confidence_score": ctrl.get("score", 0.0),
+                }
+                if mapping["control_id"]:
+                    await firestore_service.upsert_control_mapping(session_id, mapping)
+            await firestore_service.set_phase(session_id, "mapping")
+            result["_event"] = {
+                "type": "controls_found",
+                "data": {
+                    "count": len(controls),
+                    "controls": [
+                        {"control_id": c.get("id", ""), "control_title": c.get("title", "")}
+                        for c in controls[:10]
+                    ],
+                    "search_method": result.get("search_method", ""),
+                },
+            }
+            return result
 
+        # ---- control_lookup -----------------------------------------
         elif function_name == "control_lookup":
-            return control_lookup_impl(**args)
+            result = control_lookup_impl(**args)
+            controls = result.get("controls", [])
+            for ctrl in controls:
+                mapping = {
+                    "control_id": ctrl.get("id", ""),
+                    "control_title": ctrl.get("title", ""),
+                    "control_family": ctrl.get("family", ""),
+                    "implementation_status": "not_assessed",
+                    "implementation_description": "",
+                }
+                if mapping["control_id"]:
+                    await firestore_service.upsert_control_mapping(session_id, mapping)
+            result["_event"] = {
+                "type": "control_mapped",
+                "data": {
+                    "count": len(controls),
+                    "controls": [
+                        {"control_id": c.get("id", ""), "control_title": c.get("title", "")}
+                        for c in controls[:5]
+                    ],
+                },
+            }
+            return result
 
+        # ---- gap_analysis -------------------------------------------
         elif function_name == "gap_analysis":
             result = gap_analysis_impl(**args)
+            ctrl_id = args.get("control_id", "")
+            # Update the control mapping with implementation status
+            mapping_update = {
+                "control_id": ctrl_id,
+                "implementation_status": result.get("implementation_status", "not_assessed"),
+                "implementation_description": args.get("current_implementation", ""),
+            }
+            if ctrl_id:
+                await firestore_service.upsert_control_mapping(session_id, mapping_update)
             if result.get("is_gap"):
-                from backend.models.gap_finding import GapFinding
                 finding = {
-                    "control_id": args.get("control_id", ""),
+                    "control_id": ctrl_id,
                     "gap_description": result.get("current_implementation", ""),
                     "risk_level": result.get("risk_level", "moderate"),
                     "remediation": result.get("remediation", ""),
@@ -260,10 +392,15 @@ async def execute_tool(function_name: str, args: dict, session_id: str) -> dict:
                     "component_refs": [args.get("component", "")] if args.get("component") else [],
                 }
                 await firestore_service.add_gap_finding(session_id, finding)
+            await firestore_service.set_phase(session_id, "gaps")
+            result["_event"] = {
+                "type": "gap_found" if result.get("is_gap") else "control_assessed",
+                "data": result,
+            }
             return result
 
+        # ---- generate_oscal -----------------------------------------
         elif function_name == "generate_oscal":
-            # Fetch accumulated session data for generation
             mappings = await firestore_service.get_control_mappings(session_id)
             gaps = await firestore_service.get_gap_findings(session_id)
             session = await firestore_service.get_session(session_id) or {}
@@ -276,19 +413,61 @@ async def execute_tool(function_name: str, args: dict, session_id: str) -> dict:
                 "system_description": args.get("system_description") or profile.get("description", ""),
             }
             result = generate_oscal_impl(**full_args)
-            # Upload to GCS
             ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
             doc_type = args.get("document_type", "ssp")
             gcs_path = storage_service.upload_oscal(session_id, doc_type, result.get("content", {}), ts)
             await firestore_service.save_oscal_output(session_id, doc_type, gcs_path)
             result["gcs_path"] = gcs_path
+            await firestore_service.set_phase(session_id, "oscal")
+            result["_event"] = {
+                "type": "oscal_ready",
+                "data": {
+                    "document_type": doc_type,
+                    "uuid": result.get("uuid"),
+                    "gcs_path": gcs_path,
+                },
+            }
             return result
 
-        elif function_name == "map_data_types":
-            return map_data_types_impl(**args)
+        # ---- validate_oscal -----------------------------------------
+        elif function_name == "validate_oscal":
+            result = validate_oscal_impl(**args)
+            result["_event"] = {
+                "type": "oscal_validated",
+                "data": result,
+            }
+            return result
 
+        # ---- map_data_types -----------------------------------------
+        elif function_name == "map_data_types":
+            result = map_data_types_impl(**args)
+            # Update system profile with discovered data types
+            session = await firestore_service.get_session(session_id) or {}
+            profile = session.get("systemProfile", {})
+            existing_types = set(profile.get("data_types", []))
+            existing_types.update(result.get("canonical_tags", []))
+            profile["data_types"] = sorted(existing_types)
+            await firestore_service.set_system_profile(session_id, profile)
+            result["_event"] = {
+                "type": "data_types_mapped",
+                "data": {
+                    "canonical_tags": result.get("canonical_tags", []),
+                    "classification": result.get("classification", {}),
+                },
+            }
+            return result
+
+        # ---- threat_lookup ------------------------------------------
         elif function_name == "threat_lookup":
-            return threat_lookup_impl(**args)
+            result = threat_lookup_impl(**args)
+            result["_event"] = {
+                "type": "threats_found",
+                "data": {
+                    "count": result.get("count", 0),
+                    "techniques": result.get("techniques", [])[:5],
+                },
+            }
+            return result
 
         else:
             logger.warning("Unknown tool: %s", function_name)
@@ -444,26 +623,24 @@ async def live_session(websocket: WebSocket):
 
                                 result = await execute_tool(fn_name, fn_args, session_id)
 
-                                # Send structured event to client for UI updates
-                                if fn_name == "classify_system":
-                                    await websocket.send_text(json.dumps({
-                                        "type": "classification",
-                                        "data": result,
-                                    }))
-                                elif fn_name == "gap_analysis" and result.get("is_gap"):
-                                    await websocket.send_text(json.dumps({
-                                        "type": "gap_found",
-                                        "data": result,
-                                    }))
-                                elif fn_name == "generate_oscal":
-                                    await websocket.send_text(json.dumps({
-                                        "type": "oscal_ready",
-                                        "data": {
-                                            "document_type": fn_args.get("document_type"),
-                                            "uuid": result.get("uuid"),
-                                            "gcs_path": result.get("gcs_path"),
-                                        },
-                                    }))
+                                # Pop the structured event and forward to client
+                                event = result.pop("_event", None)
+                                if event:
+                                    await websocket.send_text(json.dumps(event))
+                                    # Also send phase_change if the event implies one
+                                    phase_map = {
+                                        "classification": "classification",
+                                        "controls_found": "mapping",
+                                        "control_mapped": "mapping",
+                                        "gap_found": "gaps",
+                                        "control_assessed": "gaps",
+                                        "oscal_ready": "oscal",
+                                    }
+                                    if phase := phase_map.get(event.get("type", "")):
+                                        await websocket.send_text(json.dumps({
+                                            "type": "phase_change",
+                                            "phase": phase,
+                                        }))
 
                                 # Return function result to Gemini
                                 await gemini_session.send(
@@ -520,6 +697,27 @@ async def live_session(websocket: WebSocket):
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "compass-backend", "version": "1.0.0"}
+
+
+@app.get("/health/gemini")
+async def gemini_health_check():
+    """Verify Gemini API is reachable and responding."""
+    try:
+        response = await genai_client.aio.models.generate_content(
+            model=settings.gemini_model,
+            contents="Respond with the single word: OK",
+            config=types.GenerateContentConfig(max_output_tokens=5),
+        )
+        text = (response.text or "").strip()
+        return {
+            "status": "ok",
+            "model": settings.gemini_model,
+            "mode": "api_key" if (settings.google_api_key and not settings.gemini_use_vertex) else "vertex_ai",
+            "response": text,
+        }
+    except Exception as exc:
+        logger.error("Gemini health check failed: %s", exc)
+        raise HTTPException(status_code=503, detail=f"Gemini API unreachable: {exc}")
 
 
 @app.get("/api/sessions")
@@ -597,6 +795,277 @@ async def upload_diagram(session_id: str, file: UploadFile = File(...)):
         content_type=content_type,
     )
     return {"url": gcs_path, "filename": file.filename, "analysis_ready": True}
+
+
+# ------------------------------------------------------------------
+# Text Chat — non-live AI interactions via REST
+# ------------------------------------------------------------------
+
+@app.post("/api/chat/{session_id}")
+async def text_chat(session_id: str, body: dict):
+    """
+    Send a text message to COMPASS and get an AI response with tool calls
+    executed server-side.  Uses the same Gemini model + system prompt as
+    the Live API but over a standard generate-content round-trip.
+
+    Request body:
+        { "message": "We process PII including SSNs on AWS GovCloud." }
+
+    Response:
+        {
+          "reply": "Based on …",
+          "events": [ { "type": "classification", "data": {…} }, … ]
+        }
+    """
+    session = await firestore_service.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    user_message = (body.get("message") or "").strip()
+    if not user_message:
+        raise HTTPException(status_code=422, detail="message is required")
+
+    # Persist user message to transcript
+    await firestore_service.add_transcript_entry(session_id, {
+        "speaker": "user",
+        "text": user_message,
+    })
+
+    # Build conversation context from recent transcript
+    transcript = await firestore_service.get_transcript(session_id, limit=20)
+    history_contents: list[types.Content] = []
+    for entry in transcript[:-1]:  # exclude the one we just added
+        role = "model" if entry.get("speaker") == "compass" else "user"
+        history_contents.append(
+            types.Content(role=role, parts=[types.Part(text=entry.get("text", ""))])
+        )
+    history_contents.append(
+        types.Content(role="user", parts=[types.Part(text=user_message)])
+    )
+
+    # Call Gemini with tool declarations (same schema as Live API)
+    tool_config = types.Tool(
+        function_declarations=LIVE_CONFIG.tools[0].function_declarations  # type: ignore[index]
+    )
+    response = await genai_client.aio.models.generate_content(
+        model=settings.gemini_model,
+        contents=history_contents,
+        config=types.GenerateContentConfig(
+            system_instruction=COMPASS_SYSTEM_PROMPT,
+            tools=[tool_config],
+        ),
+    )
+
+    events: list[dict] = []
+    reply_parts: list[str] = []
+
+    # Process response — may contain text + function calls
+    MAX_TOOL_ROUNDS = 5
+    for _round in range(MAX_TOOL_ROUNDS):
+        for candidate in response.candidates or []:
+            for part in candidate.content.parts or []:
+                if part.text:
+                    reply_parts.append(part.text)
+                if part.function_call:
+                    fn_name = part.function_call.name
+                    fn_args = dict(part.function_call.args) if part.function_call.args else {}
+                    logger.info("Chat tool call: %s(%s)", fn_name, list(fn_args.keys()))
+                    result = await execute_tool(fn_name, fn_args, session_id)
+                    event = result.pop("_event", None)
+                    if event:
+                        events.append(event)
+
+                    # Send tool result back to Gemini for follow-up
+                    history_contents.append(candidate.content)
+                    history_contents.append(
+                        types.Content(
+                            role="user",
+                            parts=[
+                                types.Part(
+                                    function_response=types.FunctionResponse(
+                                        name=fn_name,
+                                        response={"result": result},
+                                    )
+                                )
+                            ],
+                        )
+                    )
+
+        # Check if there are pending function calls that need another round
+        has_fn_calls = any(
+            part.function_call
+            for candidate in (response.candidates or [])
+            for part in (candidate.content.parts or [])
+        )
+        if not has_fn_calls:
+            break
+
+        # Continue the conversation with tool results
+        response = await genai_client.aio.models.generate_content(
+            model=settings.gemini_model,
+            contents=history_contents,
+            config=types.GenerateContentConfig(
+                system_instruction=COMPASS_SYSTEM_PROMPT,
+                tools=[tool_config],
+            ),
+        )
+
+    reply_text = " ".join(reply_parts).strip()
+    if reply_text:
+        await firestore_service.add_transcript_entry(session_id, {
+            "speaker": "compass",
+            "text": reply_text,
+        })
+
+    return {"reply": reply_text, "events": events}
+
+
+# ------------------------------------------------------------------
+# Transcript
+# ------------------------------------------------------------------
+
+@app.get("/api/transcript/{session_id}")
+async def get_transcript(session_id: str, limit: int = 50):
+    """Return the conversation transcript for a session."""
+    session = await firestore_service.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    entries = await firestore_service.get_transcript(session_id, limit=limit)
+    return {"session_id": session_id, "entries": entries}
+
+
+# ------------------------------------------------------------------
+# ADK Agent Runner — full agentic endpoint with sub-agent delegation
+# ------------------------------------------------------------------
+# Lazy-init to avoid import-time failures if ADK is not available
+_adk_runner = None
+_adk_session_service = None
+
+
+def _get_adk_runner():
+    """Lazy-initialise the ADK Runner + InMemorySessionService."""
+    global _adk_runner, _adk_session_service
+    if _adk_runner is not None:
+        return _adk_runner, _adk_session_service
+    try:
+        from google.adk.runners import Runner
+        from google.adk.sessions import InMemorySessionService
+        from backend.agents.root_agent import root_agent
+
+        _adk_session_service = InMemorySessionService()
+        _adk_runner = Runner(
+            agent=root_agent,
+            app_name="compass",
+            session_service=_adk_session_service,
+        )
+        logger.info("ADK Runner initialised with root_agent (4 sub-agents)")
+        return _adk_runner, _adk_session_service
+    except Exception as exc:
+        logger.error("ADK Runner init failed: %s", exc)
+        raise
+
+
+@app.post("/api/agent/{session_id}")
+async def agent_chat(session_id: str, body: dict):
+    """
+    Send a message through the full ADK agent pipeline.
+
+    This uses the ADK Runner which enables the root_agent to delegate
+    to sub-agents (classifier, mapper, gap, oscal) automatically based
+    on the conversation phase.  All tools are invoked by the agents
+    themselves — no manual dispatch needed.
+
+    Request body:
+        { "message": "...", "user_id": "..." }
+
+    Response:
+        {
+          "reply": "...",
+          "agent": "compass_root",
+          "events": [ ... ]
+        }
+    """
+    runner, session_service = _get_adk_runner()
+
+    user_message = (body.get("message") or "").strip()
+    if not user_message:
+        raise HTTPException(status_code=422, detail="message is required")
+    user_id = body.get("user_id", "anonymous")
+
+    # Get or create an ADK session mapped to the Firestore session
+    from google.genai import types as genai_types
+
+    # Use session_id as the ADK session ID for consistency
+    adk_session = await session_service.get_session(
+        app_name="compass",
+        user_id=user_id,
+        session_id=session_id,
+    )
+    if adk_session is None:
+        adk_session = await session_service.create_session(
+            app_name="compass",
+            user_id=user_id,
+            session_id=session_id,
+        )
+
+    # Persist user message to Firestore transcript
+    await firestore_service.add_transcript_entry(session_id, {
+        "speaker": "user",
+        "text": user_message,
+    })
+
+    # Build the user content
+    user_content = genai_types.Content(
+        role="user",
+        parts=[genai_types.Part(text=user_message)],
+    )
+
+    reply_parts: list[str] = []
+    events: list[dict] = []
+    responding_agent: str = "compass_root"
+
+    # Run the agent — collect all events from the async generator
+    async for adk_event in runner.run_async(
+        user_id=user_id,
+        session_id=session_id,
+        new_message=user_content,
+    ):
+        # Track which agent responded
+        if hasattr(adk_event, "author") and adk_event.author:
+            responding_agent = adk_event.author
+
+        # Collect text output
+        if hasattr(adk_event, "content") and adk_event.content:
+            for part in adk_event.content.parts or []:
+                if hasattr(part, "text") and part.text:
+                    reply_parts.append(part.text)
+                # Collect function call events for the frontend
+                if hasattr(part, "function_call") and part.function_call:
+                    events.append({
+                        "type": "tool_call",
+                        "tool": part.function_call.name,
+                        "args": dict(part.function_call.args) if part.function_call.args else {},
+                    })
+                if hasattr(part, "function_response") and part.function_response:
+                    events.append({
+                        "type": "tool_result",
+                        "tool": part.function_response.name,
+                        "result": part.function_response.response,
+                    })
+
+    reply_text = " ".join(reply_parts).strip()
+    if reply_text:
+        await firestore_service.add_transcript_entry(session_id, {
+            "speaker": "compass",
+            "text": reply_text,
+            "agent": responding_agent,
+        })
+
+    return {
+        "reply": reply_text,
+        "agent": responding_agent,
+        "events": events,
+    }
 
 
 # ------------------------------------------------------------------

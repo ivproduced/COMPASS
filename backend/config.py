@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------
     gemini_model: str = "gemini-2.5-pro"
     gemini_voice: str = "Kore"
+    google_api_key: str = ""              # Set for API-key mode (local dev)
+    gemini_use_vertex: bool = True        # False → use API key instead
 
     # -------------------------------------------------------------------
     # Firestore
