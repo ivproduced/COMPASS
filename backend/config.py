@@ -28,9 +28,10 @@ class Settings(BaseSettings):
     # Gemini
     # -------------------------------------------------------------------
     gemini_model: str = "gemini-2.5-pro"
+    gemini_live_model: str = "gemini-2.5-flash-native-audio-latest"  # bidiGenerateContent-capable model
     gemini_voice: str = "Kore"
-    google_api_key: str = ""              # Set for API-key mode (local dev)
-    gemini_use_vertex: bool = True        # False → use API key instead
+    google_api_key: str = ""              # Set for API-key mode (Developer API key)
+    gemini_use_vertex: bool = False       # False → use Developer API key (Vertex Live API not yet GA)
 
     # -------------------------------------------------------------------
     # Firestore
@@ -57,7 +58,16 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------
     host: str = "0.0.0.0"
     port: int = 8080
-    cors_origins: list[str] = ["http://localhost:3000", "https://compass-fedramp.web.app"]
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:5175",
+        "http://localhost:8080",
+        "http://localhost:8081",
+        "https://compass-fedramp.web.app",
+        "https://compass-backend-psmdy224na-uc.a.run.app",
+    ]
 
     # -------------------------------------------------------------------
     # Session

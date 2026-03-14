@@ -83,7 +83,9 @@ genai_client = _build_genai_client()
 # Live API config — built once, reused per session
 # ------------------------------------------------------------------
 LIVE_CONFIG = types.LiveConnectConfig(
-    response_modalities=["AUDIO", "TEXT"],
+    response_modalities=["AUDIO"],
+    output_audio_transcription=types.AudioTranscriptionConfig(),
+    input_audio_transcription=types.AudioTranscriptionConfig(),
     speech_config=types.SpeechConfig(
         voice_config=types.VoiceConfig(
             prebuilt_voice_config=types.PrebuiltVoiceConfig(
@@ -526,7 +528,7 @@ async def live_session(websocket: WebSocket):
         logger.info("Live session started: %s", session_id)
 
         async with genai_client.aio.live.connect(
-            model=settings.gemini_model,
+            model=settings.gemini_live_model,
             config=LIVE_CONFIG,
         ) as gemini_session:
 
@@ -600,15 +602,46 @@ async def live_session(websocket: WebSocket):
                         if response.data:
                             await websocket.send_bytes(response.data)
 
-                        # Text transcript
-                        if response.text:
+                        # Native-audio output transcription (COMPASS's response)
+                        sc = response.server_content
+                        if sc:
+                            if sc.output_transcription and sc.output_transcription.text:
+                                t = sc.output_transcription
+                                await websocket.send_text(json.dumps({
+                                    "type": "transcript",
+                                    "speaker": "compass",
+                                    "text": t.text,
+                                    "final": bool(t.finished),
+                                }))
+                                if t.finished:
+                                    await firestore_service.add_transcript_entry(session_id, {
+                                        "speaker": "compass",
+                                        "text": t.text,
+                                    })
+
+                            # Native-audio input transcription (user's speech)
+                            if sc.input_transcription and sc.input_transcription.text:
+                                t = sc.input_transcription
+                                await websocket.send_text(json.dumps({
+                                    "type": "transcript",
+                                    "speaker": "user",
+                                    "text": t.text,
+                                    "final": bool(t.finished),
+                                }))
+                                if t.finished:
+                                    await firestore_service.add_transcript_entry(session_id, {
+                                        "speaker": "user",
+                                        "text": t.text,
+                                    })
+
+                        # Text modality fallback (non-native-audio models)
+                        elif response.text:
                             await websocket.send_text(json.dumps({
                                 "type": "transcript",
                                 "speaker": "compass",
                                 "text": response.text,
                                 "final": True,
                             }))
-                            # Persist to Firestore
                             await firestore_service.add_transcript_entry(session_id, {
                                 "speaker": "compass",
                                 "text": response.text,
@@ -723,6 +756,10 @@ async def gemini_health_check():
 @app.get("/api/sessions")
 async def list_sessions(user_id: str = "anonymous"):
     sessions = await firestore_service.list_sessions(user_id)
+    # Normalize Firestore doc id → session_id for the frontend
+    for s in sessions:
+        if "session_id" not in s:
+            s["session_id"] = s.pop("id", "")
     return {"sessions": sessions}
 
 

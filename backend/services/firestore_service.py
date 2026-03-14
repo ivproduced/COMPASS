@@ -73,10 +73,10 @@ class FirestoreService:
 
     async def list_sessions(self, user_id: str, limit: int = 20) -> list[dict]:
         db = self._get_client()
+        # Simple single-field filter avoids needing a composite index
         docs = (
             db.collection(_COL_SESSIONS)
             .where("userId", "==", user_id)
-            .order_by("updatedAt", direction=firestore.Query.DESCENDING)
             .limit(limit)
             .stream()
         )
@@ -85,6 +85,8 @@ class FirestoreService:
             data = doc.to_dict()
             data["id"] = doc.id
             results.append(data)
+        # Sort by updatedAt descending in Python
+        results.sort(key=lambda x: x.get("updatedAt", ""), reverse=True)
         return results
 
     async def set_phase(self, session_id: str, phase: str) -> None:
