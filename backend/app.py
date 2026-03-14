@@ -584,10 +584,12 @@ async def live_session(websocket: WebSocket):
                                         logger.error("Diagram load failed: %s", exc)
 
                             elif msg_type == "end_of_turn":
-                                # User stopped speaking — signal Gemini to respond
-                                logger.info("end_of_turn received — sending turn_complete to Gemini")
+                                # User stopped speaking — signal end of audio stream so Gemini responds
+                                logger.info("end_of_turn received — sending audio_stream_end to Gemini")
                                 await gemini_session.send(
-                                    input=types.LiveClientContent(turn_complete=True)
+                                    input=types.LiveClientRealtimeInput(
+                                        audio_stream_end=True
+                                    )
                                 )
 
                             elif msg_type == "end_session":
