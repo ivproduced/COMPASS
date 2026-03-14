@@ -65,6 +65,7 @@ class Settings(BaseSettings):
         "http://localhost:5175",
         "http://localhost:8080",
         "http://localhost:8081",
+        "http://localhost:8082",
         "https://compass-fedramp.web.app",
         "https://compass-backend-psmdy224na-uc.a.run.app",
     ]
