@@ -593,10 +593,15 @@ async def live_session(websocket: WebSocket):
                                         logger.error("Diagram load failed: %s", exc)
 
                             elif msg_type == "end_of_turn":
-                                # Frontend button pressed stop — client mic is off.
-                                # With automatic VAD, Gemini detects speech end itself;
-                                # nothing to send here.
-                                logger.info("end_of_turn received (VAD mode — no Gemini signal needed)")
+                                    # Frontend button pressed stop — explicitly finalize
+                                    # the current audio stream so Gemini can emit input
+                                    # transcription and start its response immediately.
+                                    logger.info("end_of_turn received — sending audio_stream_end to Gemini")
+                                    await gemini_session.send(
+                                        input=types.LiveClientRealtimeInput(
+                                            audio_stream_end=True
+                                        )
+                                    )
 
                             elif msg_type == "end_session":
                                 await firestore_service.update_session(session_id, {"status": "completed"})

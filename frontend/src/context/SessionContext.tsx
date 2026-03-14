@@ -200,6 +200,30 @@ function float32ToInt16(buf: Float32Array): Int16Array {
   return out;
 }
 
+function downsampleTo16kHz(input: Float32Array, inputSampleRate: number): Float32Array {
+  if (inputSampleRate <= 16000) return input;
+
+  const ratio = inputSampleRate / 16000;
+  const outputLength = Math.max(1, Math.round(input.length / ratio));
+  const output = new Float32Array(outputLength);
+
+  for (let i = 0; i < outputLength; i++) {
+    const start = Math.floor(i * ratio);
+    const end = Math.min(input.length, Math.floor((i + 1) * ratio));
+
+    let sum = 0;
+    let count = 0;
+    for (let j = start; j < end; j++) {
+      sum += input[j];
+      count += 1;
+    }
+
+    output[i] = count > 0 ? sum / count : input[Math.min(start, input.length - 1)] ?? 0;
+  }
+
+  return output;
+}
+
 // ─── Provider ────────────────────────────────────────────────────────────────
 
 export function SessionProvider({ children }: { children: ReactNode }) {
@@ -508,6 +532,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       const audioCtx = new AudioContext({ sampleRate: 16000 });
       captureCtxRef.current = audioCtx;
+      if (audioCtx.state === "suspended") {
+        await audioCtx.resume();
+      }
 
       const source = audioCtx.createMediaStreamSource(stream);
       sourceRef.current = source;
@@ -519,17 +546,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       processor.onaudioprocess = (e) => {
         const liveWs = wsRef.current;
         if (!liveWs || liveWs.readyState !== WebSocket.OPEN) return;
-        const int16 = float32ToInt16(e.inputBuffer.getChannelData(0));
+        const pcm = downsampleTo16kHz(
+          e.inputBuffer.getChannelData(0),
+          e.inputBuffer.sampleRate,
+        );
+        const int16 = float32ToInt16(pcm);
         liveWs.send(int16.buffer);
       };
 
       source.connect(processor);
       processor.connect(audioCtx.destination);
-
-      // Notify backend that speech activity is starting (manual push-to-talk mode)
-      if (ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify({ type: "start_listening" }));
-      }
 
       dispatch({ type: "SET_LISTENING", value: true });
     } catch (err) {
