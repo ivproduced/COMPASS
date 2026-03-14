@@ -585,6 +585,7 @@ async def live_session(websocket: WebSocket):
 
                             elif msg_type == "end_of_turn":
                                 # User stopped speaking — signal Gemini to respond
+                                logger.info("end_of_turn received — sending turn_complete to Gemini")
                                 await gemini_session.send(
                                     input=types.LiveClientContent(turn_complete=True)
                                 )
@@ -603,11 +604,11 @@ async def live_session(websocket: WebSocket):
                 try:
                     async for response in gemini_session.receive():
                         # PCM audio response
+                        sc = response.server_content
                         if response.data:
                             await websocket.send_bytes(response.data)
 
                         # Native-audio output transcription (COMPASS's response)
-                        sc = response.server_content
                         if sc:
                             if sc.output_transcription and sc.output_transcription.text:
                                 t = sc.output_transcription
@@ -705,7 +706,28 @@ async def live_session(websocket: WebSocket):
                     except Exception:
                         pass
 
-            await asyncio.gather(receive_from_client(), send_to_client())
+            # 100ms of silence at 16kHz 16-bit mono = 3200 bytes
+            _SILENCE = b"\x00" * 3200
+
+            async def keepalive():
+                """Send silent audio every 25s to prevent Gemini idle timeout (60s)."""
+                try:
+                    while True:
+                        await asyncio.sleep(25)
+                        await gemini_session.send(
+                            input=types.LiveClientRealtimeInput(
+                                media_chunks=[
+                                    types.Blob(
+                                        data=_SILENCE,
+                                        mime_type="audio/pcm;rate=16000",
+                                    )
+                                ]
+                            )
+                        )
+                except Exception:
+                    pass  # Session closed — exit silently
+
+            await asyncio.gather(receive_from_client(), send_to_client(), keepalive())
 
     except asyncio.TimeoutError:
         await websocket.send_text(json.dumps({
