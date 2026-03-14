@@ -91,13 +91,6 @@ LIVE_CONFIG = types.LiveConnectConfig(
             )
         )
     ),
-    # Disable automatic VAD — use explicit activity_start/activity_end
-    # for push-to-talk control so Gemini only responds after user clicks ⏹
-    realtime_input_config=types.RealtimeInputConfig(
-        automatic_activity_detection=types.AutomaticActivityDetection(
-            disabled=True
-        )
-    ),
     tools=[
         types.Tool(
             function_declarations=[
@@ -543,6 +536,11 @@ async def live_session(websocket: WebSocket):
                     while True:
                         msg = await websocket.receive()
 
+                        # Browser sent a close frame
+                        if msg.get("type") == "websocket.disconnect":
+                            logger.info("receive_from_client: browser sent close frame, code=%s", msg.get("code"))
+                            break
+
                         # Binary = PCM audio chunk
                         if "bytes" in msg:
                             await gemini_session.send(
@@ -590,42 +588,50 @@ async def live_session(websocket: WebSocket):
                                     except Exception as exc:
                                         logger.error("Diagram load failed: %s", exc)
 
-                            elif msg_type == "start_listening":
-                                # User pressed record — signal speech start
-                                logger.info("start_listening received — sending activity_start to Gemini")
-                                await gemini_session.send(
-                                    input=types.LiveClientRealtimeInput(
-                                        activity_start=types.ActivityStart()
-                                    )
-                                )
-
                             elif msg_type == "end_of_turn":
-                                # User stopped recording — signal end of speech turn so Gemini responds
-                                logger.info("end_of_turn received — sending activity_end to Gemini")
-                                await gemini_session.send(
-                                    input=types.LiveClientRealtimeInput(
-                                        activity_end=types.ActivityEnd()
-                                    )
-                                )
+                                # Frontend button pressed stop — client mic is off.
+                                # With automatic VAD, Gemini detects speech end itself;
+                                # nothing to send here.
+                                logger.info("end_of_turn received (VAD mode — no Gemini signal needed)")
 
                             elif msg_type == "end_session":
                                 await firestore_service.update_session(session_id, {"status": "completed"})
                                 break
 
                 except WebSocketDisconnect:
-                    logger.info("Client disconnected: %s", session_id)
+                    logger.info("Client disconnected (clean): %s", session_id)
                 except Exception as exc:
                     logger.error("receive_from_client error: %s", exc)
 
             async def send_to_client():
                 """Forward Gemini responses to client."""
                 try:
+                    logger.info("send_to_client: waiting for Gemini responses")
                     async for response in gemini_session.receive():
-                        # PCM audio response
+                        # Log the full raw structure so we can debug what comes back
+                        logger.info("Gemini raw response: data=%s sc=%s text=%s tool=%s",
+                            len(response.data) if response.data else None,
+                            type(response.server_content).__name__ if response.server_content else None,
+                            repr(response.text)[:80] if response.text else None,
+                            response.tool_call is not None,
+                        )
+
+                        # PCM audio response — try both .data and inline_data in parts
                         sc = response.server_content
+                        audio_sent = False
                         if response.data:
-                            logger.info("Gemini audio chunk: %d bytes", len(response.data))
+                            logger.info("Gemini audio chunk (data): %d bytes", len(response.data))
                             await websocket.send_bytes(response.data)
+                            audio_sent = True
+
+                        # Native-audio models may return audio as inline_data in model_turn parts
+                        if sc and sc.model_turn and not audio_sent:
+                            for part in (sc.model_turn.parts or []):
+                                if part.inline_data and part.inline_data.data:
+                                    logger.info("Gemini audio chunk (inline_data): %d bytes mime=%s",
+                                                len(part.inline_data.data), part.inline_data.mime_type)
+                                    await websocket.send_bytes(part.inline_data.data)
+                                    audio_sent = True
 
                         # Native-audio output transcription (COMPASS's response)
                         if sc:
@@ -659,7 +665,7 @@ async def live_session(websocket: WebSocket):
                                     })
 
                         # Text modality fallback (non-native-audio models)
-                        elif response.text:
+                        if not sc and response.text:
                             await websocket.send_text(json.dumps({
                                 "type": "transcript",
                                 "speaker": "compass",
@@ -713,6 +719,7 @@ async def live_session(websocket: WebSocket):
                                 )
 
                 except WebSocketDisconnect:
+                    logger.info("send_to_client: browser disconnected cleanly")
                     pass
                 except Exception as exc:
                     logger.error("send_to_client error: %s", exc)
@@ -724,6 +731,8 @@ async def live_session(websocket: WebSocket):
                         }))
                     except Exception:
                         pass
+                finally:
+                    logger.info("send_to_client: loop ended (Gemini session closed or error)")
 
             # 100ms of silence at 16kHz 16-bit mono = 3200 bytes
             _SILENCE = b"\x00" * 3200
