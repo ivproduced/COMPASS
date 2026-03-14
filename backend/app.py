@@ -583,6 +583,20 @@ async def live_session(websocket: WebSocket):
                                     except Exception as exc:
                                         logger.error("Diagram load failed: %s", exc)
 
+                            elif msg_type == "end_of_turn":
+                                # User stopped speaking — signal Gemini to respond
+                                await gemini_session.send(
+                                    input=types.LiveClientContent(
+                                        turns=[
+                                            types.Content(
+                                                role="user",
+                                                parts=[types.Part(text="")],
+                                            )
+                                        ],
+                                        turn_complete=True,
+                                    )
+                                )
+
                             elif msg_type == "end_session":
                                 await firestore_service.update_session(session_id, {"status": "completed"})
                                 break

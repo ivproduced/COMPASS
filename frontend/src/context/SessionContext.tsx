@@ -89,6 +89,7 @@ interface SessionState {
   oscalDocs: OscalDoc[];
   latestEvent: LiveEvent | null;
   complianceScore: ComplianceScore | null;
+  micError: string | null;
 }
 
 type Action =
@@ -104,7 +105,8 @@ type Action =
   | { type: "ADD_GAP"; data: GapFinding }
   | { type: "ADD_OSCAL"; data: OscalDoc }
   | { type: "SET_LATEST_EVENT"; event: LiveEvent }
-  | { type: "LOAD_ASSESSMENT"; payload: Partial<SessionState> };
+  | { type: "LOAD_ASSESSMENT"; payload: Partial<SessionState> }
+  | { type: "SET_MIC_ERROR"; message: string | null };
 
 const initial: SessionState = {
   sessionId: null,
@@ -119,6 +121,7 @@ const initial: SessionState = {
   oscalDocs: [],
   latestEvent: null,
   complianceScore: null,
+  micError: null,
 };
 
 function reducer(state: SessionState, action: Action): SessionState {
@@ -164,6 +167,8 @@ function reducer(state: SessionState, action: Action): SessionState {
       return { ...state, latestEvent: action.event };
     case "LOAD_ASSESSMENT":
       return { ...state, ...action.payload };
+    case "SET_MIC_ERROR":
+      return { ...state, micError: action.message };
     default:
       return state;
   }
@@ -179,6 +184,7 @@ interface SessionContextValue extends SessionState {
   sendTextMessage: (text: string) => Promise<void>;
   endSession: () => void;
   refreshAssessment: () => Promise<void>;
+  clearMicError: () => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -206,6 +212,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const streamRef = useRef<MediaStream | null>(null);
   const playbackCtxRef = useRef<AudioContext | null>(null);
   const nextPlayTimeRef = useRef<number>(0);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectDelayRef = useRef<number>(2000);
 
   // Keep state in ref so callbacks can access current values without stale closure
   const stateRef = useRef(state);
@@ -448,6 +456,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       ws.onclose = () => {
         dispatch({ type: "SET_CONNECTED", value: false });
         dispatch({ type: "SET_LISTENING", value: false });
+        // Auto-reconnect with capped exponential backoff
+        const delay = reconnectDelayRef.current;
+        reconnectTimerRef.current = setTimeout(() => {
+          const sid = stateRef.current.sessionId;
+          if (sid) {
+            reconnectDelayRef.current = Math.min(delay * 2, 30000);
+            connect(sid);
+          }
+        }, delay);
       };
 
       ws.onerror = () => {
@@ -455,6 +472,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       };
 
       dispatch({ type: "SET_SESSION", sessionId });
+      reconnectDelayRef.current = 2000; // reset backoff on explicit connect
     },
     [handleMessage, playPCMAudio]
   );
@@ -471,6 +489,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     captureCtxRef.current = null;
     streamRef.current = null;
     dispatch({ type: "SET_LISTENING", value: false });
+    // Signal to Gemini that the user's turn is complete
+    const ws = wsRef.current;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ type: "end_of_turn" }));
+    }
   }, []);
 
   const startListening = useCallback(async () => {
@@ -506,6 +529,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "SET_LISTENING", value: true });
     } catch (err) {
       console.error("Microphone access denied:", err);
+      const msg =
+        err instanceof DOMException && err.name === "NotAllowedError"
+          ? "Microphone permission denied. Please allow mic access in your browser and try again."
+          : "Could not access microphone. Check your browser settings.";
+      dispatch({ type: "SET_MIC_ERROR", message: msg });
     }
   }, []);
 
@@ -548,6 +576,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   // ── Disconnect ─────────────────────────────────────────────────────────────
 
   const disconnect = useCallback(() => {
+    // Cancel any pending reconnect
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    reconnectDelayRef.current = 2000;
     stopListening();
     wsRef.current?.close();
     wsRef.current = null;
@@ -563,6 +597,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     disconnect();
   }, [disconnect]);
 
+  const clearMicError = useCallback(() => {
+    dispatch({ type: "SET_MIC_ERROR", message: null });
+  }, []);
+
   useEffect(() => () => { disconnect(); }, [disconnect]);
 
   return (
@@ -576,6 +614,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         sendTextMessage,
         endSession,
         refreshAssessment,
+        clearMicError,
       }}
     >
       {children}
