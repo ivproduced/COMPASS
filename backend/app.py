@@ -91,6 +91,8 @@ LIVE_CONFIG = types.LiveConnectConfig(
             )
         )
     ),
+    input_audio_transcription=types.AudioTranscriptionConfig(),
+    output_audio_transcription=types.AudioTranscriptionConfig(),
     tools=[
         types.Tool(
             function_declarations=[
@@ -543,11 +545,13 @@ async def live_session(websocket: WebSocket):
 
                         # Binary = PCM audio chunk
                         if "bytes" in msg:
+                            audio_data = msg["bytes"]
+                            logger.info("audio chunk from client: %d bytes", len(audio_data))
                             await gemini_session.send(
                                 input=types.LiveClientRealtimeInput(
                                     media_chunks=[
                                         types.Blob(
-                                            data=msg["bytes"],
+                                            data=audio_data,
                                             mime_type="audio/pcm;rate=16000",
                                         )
                                     ]

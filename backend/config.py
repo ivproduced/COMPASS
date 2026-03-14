@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     # Gemini
     # -------------------------------------------------------------------
     gemini_model: str = "gemini-2.5-pro"
-    gemini_live_model: str = "gemini-2.5-flash-native-audio-latest"  # bidiGenerateContent-capable model
+    gemini_live_model: str = "gemini-2.0-flash-live-001"  # Stable Live API model
     gemini_voice: str = "Kore"
     google_api_key: str = ""              # Set for API-key mode (Developer API key)
     gemini_use_vertex: bool = False       # False → use Developer API key (Vertex Live API not yet GA)
