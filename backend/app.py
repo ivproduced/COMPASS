@@ -586,15 +586,7 @@ async def live_session(websocket: WebSocket):
                             elif msg_type == "end_of_turn":
                                 # User stopped speaking — signal Gemini to respond
                                 await gemini_session.send(
-                                    input=types.LiveClientContent(
-                                        turns=[
-                                            types.Content(
-                                                role="user",
-                                                parts=[types.Part(text="")],
-                                            )
-                                        ],
-                                        turn_complete=True,
-                                    )
+                                    input=types.LiveClientContent(turn_complete=True)
                                 )
 
                             elif msg_type == "end_session":
