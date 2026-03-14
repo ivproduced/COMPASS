@@ -526,6 +526,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       source.connect(processor);
       processor.connect(audioCtx.destination);
 
+      // Notify backend that speech activity is starting (manual push-to-talk mode)
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "start_listening" }));
+      }
+
       dispatch({ type: "SET_LISTENING", value: true });
     } catch (err) {
       console.error("Microphone access denied:", err);

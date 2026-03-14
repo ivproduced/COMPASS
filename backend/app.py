@@ -91,6 +91,13 @@ LIVE_CONFIG = types.LiveConnectConfig(
             )
         )
     ),
+    # Disable automatic VAD — use explicit activity_start/activity_end
+    # for push-to-talk control so Gemini only responds after user clicks ⏹
+    realtime_input_config=types.RealtimeInputConfig(
+        automatic_activity_detection=types.AutomaticActivityDetection(
+            disabled=True
+        )
+    ),
     tools=[
         types.Tool(
             function_declarations=[
@@ -583,12 +590,21 @@ async def live_session(websocket: WebSocket):
                                     except Exception as exc:
                                         logger.error("Diagram load failed: %s", exc)
 
-                            elif msg_type == "end_of_turn":
-                                # User stopped speaking — signal end of audio stream so Gemini responds
-                                logger.info("end_of_turn received — sending audio_stream_end to Gemini")
+                            elif msg_type == "start_listening":
+                                # User pressed record — signal speech start
+                                logger.info("start_listening received — sending activity_start to Gemini")
                                 await gemini_session.send(
                                     input=types.LiveClientRealtimeInput(
-                                        audio_stream_end=True
+                                        activity_start=types.ActivityStart()
+                                    )
+                                )
+
+                            elif msg_type == "end_of_turn":
+                                # User stopped recording — signal end of speech turn so Gemini responds
+                                logger.info("end_of_turn received — sending activity_end to Gemini")
+                                await gemini_session.send(
+                                    input=types.LiveClientRealtimeInput(
+                                        activity_end=types.ActivityEnd()
                                     )
                                 )
 
@@ -608,6 +624,7 @@ async def live_session(websocket: WebSocket):
                         # PCM audio response
                         sc = response.server_content
                         if response.data:
+                            logger.info("Gemini audio chunk: %d bytes", len(response.data))
                             await websocket.send_bytes(response.data)
 
                         # Native-audio output transcription (COMPASS's response)
