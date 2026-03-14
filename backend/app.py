@@ -84,8 +84,6 @@ genai_client = _build_genai_client()
 # ------------------------------------------------------------------
 LIVE_CONFIG = types.LiveConnectConfig(
     response_modalities=["AUDIO"],
-    output_audio_transcription=types.AudioTranscriptionConfig(),
-    input_audio_transcription=types.AudioTranscriptionConfig(),
     speech_config=types.SpeechConfig(
         voice_config=types.VoiceConfig(
             prebuilt_voice_config=types.PrebuiltVoiceConfig(
