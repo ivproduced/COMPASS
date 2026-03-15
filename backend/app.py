@@ -108,6 +108,29 @@ TOOL_DECLARATIONS = [
                     type="STRING",
                     description="Optional system description",
                 ),
+                "confidentiality_override": types.Schema(
+                    type="STRING",
+                    description=(
+                        "Explicit confidentiality impact level stated by the user: 'low', 'moderate', or 'high'. "
+                        "Only set if the user has clearly stated a specific confidentiality level. "
+                        "Overrides the data-type high-water-mark for this dimension."
+                    ),
+                ),
+                "integrity_override": types.Schema(
+                    type="STRING",
+                    description=(
+                        "Explicit integrity impact level stated by the user: 'low', 'moderate', or 'high'. "
+                        "Only set if the user has clearly stated a specific integrity level."
+                    ),
+                ),
+                "availability_override": types.Schema(
+                    type="STRING",
+                    description=(
+                        "Explicit availability impact level stated by the user: 'low', 'moderate', or 'high'. "
+                        "Only set if the user has clearly stated a specific availability level. "
+                        "Example: if user says 'availability can be moderate', pass 'moderate'."
+                    ),
+                ),
             },
             required=["data_types"],
         ),
@@ -227,6 +250,15 @@ LIVE_CONFIG = types.LiveConnectConfig(
     ),
     input_audio_transcription=types.AudioTranscriptionConfig(),
     output_audio_transcription=types.AudioTranscriptionConfig(),
+    realtime_input_config=types.RealtimeInputConfig(
+        automatic_activity_detection=types.AutomaticActivityDetection(
+            disabled=False,
+            start_of_speech_sensitivity=types.StartSensitivity.START_SENSITIVITY_HIGH,
+            end_of_speech_sensitivity=types.EndSensitivity.END_SENSITIVITY_LOW,
+            prefix_padding_ms=20,
+            silence_duration_ms=1000,
+        ),
+    ),
     # NOTE: tools intentionally omitted — native-audio Live API models only
     # support bidiGenerateContent (no function calling). Tools run via sidecar
     # generate_content call in analyze_transcript_for_tools().
@@ -567,7 +599,12 @@ Recent conversation:
 Latest user message: {user_text}
 
 You MUST call one of the available tools to advance the compliance assessment.
-Choose the single most appropriate tool based on the conversation above."""
+Choose the single most appropriate tool based on the conversation above.
+
+IMPORTANT for classify_system: If the user has explicitly stated CIA impact levels
+(e.g. "availability can be moderate", "confidentiality is high", "integrity is critical"),
+you MUST pass those as confidentiality_override / integrity_override / availability_override.
+Include all previously identified data_types from the session state when re-classifying."""
 
         response = await genai_client.aio.models.generate_content(
             model=settings.gemini_model,
@@ -583,6 +620,9 @@ Choose the single most appropriate tool based on the conversation above."""
             ),
         )
 
+        logger.info("Sidecar allowed_tools=%s, num_controls=%d, has_cls=%s",
+                    allowed_tools, num_controls, bool(cls))
+
         for candidate in response.candidates or []:
             for part in (candidate.content.parts or []) if candidate.content else []:
                 if hasattr(part, "function_call") and part.function_call:
@@ -590,6 +630,10 @@ Choose the single most appropriate tool based on the conversation above."""
                     fn_args = dict(part.function_call.args) if part.function_call.args else {}
                     logger.info("Sidecar tool: %s(%s)", fn_name, list(fn_args.keys()))
                     result = await execute_tool(fn_name, fn_args, session_id)
+                    logger.info("Sidecar result keys: %s, is_gap=%s, count=%s",
+                                list(result.keys())[:8],
+                                result.get("is_gap"),
+                                result.get("count"))
                     event = result.pop("_event", None)
                     if event:
                         try:
@@ -704,23 +748,10 @@ async def live_session(websocket: WebSocket):
             config=LIVE_CONFIG,
         ) as gemini_session:
 
-            # Inject prior conversation history so COMPASS remembers context on reconnect
-            existing_tx = await firestore_service.get_transcript(session_id, limit=30)
-            if existing_tx:
-                history_turns = []
-                for entry in existing_tx:
-                    role = "user" if entry.get("speaker") == "user" else "model"
-                    text = (entry.get("text") or "").strip()
-                    if text:
-                        history_turns.append(
-                            types.Content(role=role, parts=[types.Part(text=text)])
-                        )
-                if history_turns:
-                    logger.info("Injecting %d history turns into Gemini context", len(history_turns))
-                    await gemini_session.send_client_content(
-                        turns=history_turns,
-                        turn_complete=False,  # load context; don't trigger a response
-                    )
+            # History injection via send_client_content was removed —
+            # it causes concurrent gRPC write conflicts → 1011 WS crashes
+            # on native-audio models. COMPASS system prompt provides enough
+            # context; the sidecar reads Firestore for prior conversation.
 
             async def receive_from_client():
                 """Forward client messages to Gemini."""
@@ -778,12 +809,12 @@ async def live_session(websocket: WebSocket):
                                         logger.error("Diagram load failed: %s", exc)
 
                             elif msg_type == "end_of_turn":
-                                    # For native-audio models, VAD handles turn detection
-                                    # automatically. Sending audio_stream_end=True would
-                                    # permanently close the stream for the session.
-                                    # Just stop sending audio — Gemini will detect the
-                                    # silence and respond on its own.
-                                    logger.info("end_of_turn received — relying on VAD (no audio_stream_end)")
+                                    # Flush Gemini's cached audio buffer so VAD can
+                                    # make a final decision and the model responds.
+                                    # Per the docs the client can resume sending
+                                    # audio at any time after this signal.
+                                    logger.info("end_of_turn received — sending audio_stream_end")
+                                    await gemini_session.send_realtime_input(audio_stream_end=True)
 
                             elif msg_type == "end_session":
                                 await firestore_service.update_session(session_id, {"status": "completed"})
@@ -801,6 +832,8 @@ async def live_session(websocket: WebSocket):
                 # rely on it. Instead we accumulate text and flush on turn_complete.
                 user_buf: list[str] = []
                 compass_buf: list[str] = []
+                user_flushed = False   # True once we send user text for this turn
+                last_user_text = ""    # saved for sidecar after turn_complete
 
                 try:
                     logger.info("send_to_client: waiting for Gemini responses")
@@ -822,8 +855,24 @@ async def live_session(websocket: WebSocket):
                                     audio_sent = True
 
                         if sc:
-                            # Accumulate COMPASS output transcription
+                            # Stream COMPASS output transcription in real-time.
+                            # On the FIRST compass chunk, flush the user buffer so
+                            # the user bubble appears ABOVE the compass bubble.
                             if sc.output_transcription and sc.output_transcription.text:
+                                if not user_flushed and user_buf:
+                                    last_user_text = "".join(user_buf)
+                                    user_buf.clear()
+                                    user_flushed = True
+                                    await websocket.send_text(json.dumps({
+                                        "type": "transcript",
+                                        "speaker": "user",
+                                        "text": last_user_text,
+                                        "final": True,
+                                    }))
+                                    await firestore_service.add_transcript_entry(session_id, {
+                                        "speaker": "user",
+                                        "text": last_user_text,
+                                    })
                                 compass_buf.append(sc.output_transcription.text)
                                 await websocket.send_text(json.dumps({
                                     "type": "transcript",
@@ -832,30 +881,24 @@ async def live_session(websocket: WebSocket):
                                     "final": False,
                                 }))
 
-                            # Accumulate user input transcription
+                            # Buffer user input transcription. Once flushed,
+                            # ignore late/echo chunks from the Live API.
                             if sc.input_transcription and sc.input_transcription.text:
-                                user_buf.append(sc.input_transcription.text)
-                                await websocket.send_text(json.dumps({
-                                    "type": "transcript",
-                                    "speaker": "user",
-                                    "text": sc.input_transcription.text,
-                                    "final": False,
-                                }))
+                                if not user_flushed:
+                                    user_buf.append(sc.input_transcription.text)
 
                             # turn_complete fires when Gemini finishes its response.
-                            # At this point both user and COMPASS turns are fully buffered.
                             if sc.turn_complete:
-                                logger.info("turn_complete: user_buf=%d words, compass_buf=%d words",
-                                            len(user_buf), len(compass_buf))
+                                logger.info("turn_complete: user_flushed=%s, compass_buf=%d chunks",
+                                            user_flushed, len(compass_buf))
 
                                 if compass_buf:
-                                    full_compass = " ".join(compass_buf)
+                                    full_compass = "".join(compass_buf)
                                     compass_buf.clear()
-                                    # Mark the last streaming chunk as final
                                     await websocket.send_text(json.dumps({
                                         "type": "transcript",
                                         "speaker": "compass",
-                                        "text": "",
+                                        "text": full_compass,
                                         "final": True,
                                     }))
                                     await firestore_service.add_transcript_entry(session_id, {
@@ -863,23 +906,31 @@ async def live_session(websocket: WebSocket):
                                         "text": full_compass,
                                     })
 
-                                if user_buf:
-                                    full_user = " ".join(user_buf)
+                                # If user buf wasn't flushed yet (e.g. no compass
+                                # response, pure user turn), flush now.
+                                if user_buf and not user_flushed:
+                                    last_user_text = "".join(user_buf)
                                     user_buf.clear()
                                     await websocket.send_text(json.dumps({
                                         "type": "transcript",
                                         "speaker": "user",
-                                        "text": "",
+                                        "text": last_user_text,
                                         "final": True,
                                     }))
                                     await firestore_service.add_transcript_entry(session_id, {
                                         "speaker": "user",
-                                        "text": full_user,
+                                        "text": last_user_text,
                                     })
-                                    logger.info("Sidecar trigger: user turn complete (%d chars)", len(full_user))
+
+                                if last_user_text:
+                                    logger.info("Sidecar trigger: user turn complete (%d chars)", len(last_user_text))
                                     asyncio.create_task(
-                                        analyze_transcript_for_tools(session_id, websocket, full_user)
+                                        analyze_transcript_for_tools(session_id, websocket, last_user_text)
                                     )
+
+                                # Reset for next turn
+                                user_flushed = False
+                                last_user_text = ""
 
                         # Text modality fallback (non-native-audio models)
                         if not sc and response.text:

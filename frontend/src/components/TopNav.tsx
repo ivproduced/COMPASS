@@ -1,7 +1,6 @@
 import { Compass, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface TopNavProps {
   pageTitle: string;
@@ -38,11 +37,7 @@ const TopNav = ({ pageTitle, editable = false }: TopNavProps) => {
           <Download className="h-4 w-4" />
           Export
         </Button>
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
-            JD
-          </AvatarFallback>
-        </Avatar>
+
       </div>
     </nav>
   );

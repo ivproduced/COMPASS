@@ -76,22 +76,39 @@ _INLINE_MAPPINGS: list[dict] = [
 ]
 
 
+def _normalise(record: dict) -> dict:
+    """Ensure records from different sources share a consistent field schema."""
+    # The full ATLAS corpus uses 'technique_name'; older inline records already have it.
+    # 'name' is not used anywhere but kept as fallback.
+    if "technique_name" not in record:
+        record = dict(record)
+        record["technique_name"] = record.get("name", "")
+    return record
+
+
 def _load_atlas_corpus() -> list[dict]:
-    """Load full MITRE ATLAS corpus from knowledge directory if available."""
+    """Load full MITRE ATLAS corpus from knowledge directory.
+    The generated atlas_techniques.json supersedes the inline fallback mappings
+    — inline records are only used if no JSON file is present."""
     if not _ATLAS_DIR.exists():
-        return _INLINE_MAPPINGS
-    mappings = list(_INLINE_MAPPINGS)
+        return [_normalise(m) for m in _INLINE_MAPPINGS]
+    file_mappings: list[dict] = []
     for fp in _ATLAS_DIR.glob("*.json"):
         try:
             with open(fp, encoding="utf-8") as f:
                 data = json.load(f)
             if isinstance(data, list):
-                mappings.extend(data)
+                file_mappings.extend(_normalise(r) for r in data)
             elif isinstance(data, dict):
-                mappings.append(data)
+                file_mappings.append(_normalise(data))
         except Exception as exc:
             logger.warning("Failed to load ATLAS file %s: %s", fp, exc)
-    return mappings
+    # If JSON files are present, use them; otherwise fall back to inline
+    return file_mappings if file_mappings else [_normalise(m) for m in _INLINE_MAPPINGS]
+
+
+_STOP_WORDS = {"the", "a", "an", "and", "or", "for", "of", "to", "in", "is", "it",
+               "on", "at", "by", "with", "that", "this", "are", "be", "as", "from"}
 
 
 def threat_lookup_impl(
@@ -115,20 +132,29 @@ def threat_lookup_impl(
 
     if technique_id:
         tid = technique_id.strip().upper()
-        results = [t for t in corpus if t.get("technique_id", "").upper() == tid]
+        # Support prefix matching (e.g. "AML.T0005" matches "AML.T0005.001")
+        results = [t for t in corpus if t.get("technique_id", "").upper().startswith(tid)]
 
     elif tactic:
         tac = tactic.lower()
         results = [t for t in corpus if tac in t.get("tactic", "").lower()]
 
     elif query:
-        q = query.lower()
-        results = [
-            t for t in corpus
-            if q in t.get("technique_name", "").lower()
-            or q in t.get("description", "").lower()
-            or any(q in c.lower() for c in t.get("mitigating_controls", []))
-        ]
+        words = [w for w in query.lower().split() if w not in _STOP_WORDS and len(w) > 1]
+        if not words:
+            words = [query.lower()]
+        scored: list[tuple[int, dict]] = []
+        for t in corpus:
+            haystack = " ".join([
+                t.get("technique_name", ""),
+                t.get("description", ""),
+                t.get("tactic", ""),
+            ]).lower()
+            hits = sum(1 for w in words if w in haystack)
+            if hits:
+                scored.append((hits, t))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        results = [t for _, t in scored]
 
     else:
         results = corpus  # Return all if no filter

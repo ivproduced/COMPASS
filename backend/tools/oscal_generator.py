@@ -13,6 +13,30 @@ from google.adk.tools import FunctionTool
 
 logger = logging.getLogger(__name__)
 
+# NIST SP 800-60 Vol 2 Rev 1 catalog URI (used in OSCAL information-type-ids)
+_SP800_60_URI = "https://doi.org/10.6028/NIST.SP.800-60v2r1"
+
+# Maps COMPASS canonical sensitivity tags → SP 800-60 Vol 2 information type IDs.
+# IDs are from the official catalog (format: C.x.x.x / D.x.x).
+_TAG_TO_800_60: dict[str, str] = {
+    "PII":                "C.2.8.9",  # Personal Identity and Authentication
+    "PII_SSN":            "C.2.8.9",  # Personal Identity and Authentication
+    "PII_BIOMETRIC":      "C.2.8.9",  # Personal Identity and Authentication
+    "PII_LOCATION":       "C.2.8.9",  # Personal Identity and Authentication
+    "PII_FINANCIAL":      "D.9.3",    # Financial Sector Oversight
+    "PHI":                "D.14.3",   # Health Care Administration
+    "PHI_CLINICAL":       "D.14.4",   # Health Care Delivery Services
+    "PHI_MENTAL_HEALTH":  "D.14.4",   # Health Care Delivery Services
+    "PHI_SUBSTANCE_ABUSE":"D.14.4",   # Health Care Delivery Services
+    "PHI_GENETIC":        "D.14.5",   # Health Care Research
+    "PHI_BILLING":        "D.14.3",   # Health Care Administration
+    "PHI_ADMIN":          "D.14.3",   # Health Care Administration
+    "FTI":                "C.2.8.6",  # Taxation Management
+    "CJIS":               "D.16.2",   # Criminal Investigation and Surveillance
+    "LAW_ENFORCEMENT":    "D.16.3",   # Citizen Protection
+    "CUI":                "C.2.8.9",  # Personal Identity and Authentication (general CUI)
+    "PAYMENT_CARD":       "D.9.3",    # Financial Sector Oversight
+}
 
 def _utcnow() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -116,11 +140,21 @@ def _build_ssp(
                     "information-types": [
                         {
                             "uuid": str(uuid.uuid4()),
-                            "title": dt.get("title", "Information Type"),
+                            "title": dt.get("title") or dt.get("input") or dt.get("canonical_tag", "Information Type"),
                             "description": dt.get("description", ""),
-                            "confidentiality-impact": {"base": dt.get("confidentiality", "moderate")},
-                            "integrity-impact":       {"base": dt.get("integrity", "moderate")},
-                            "availability-impact":    {"base": dt.get("availability", "low")},
+                            **(
+                                {
+                                    "information-type-ids": {
+                                        _SP800_60_URI: {
+                                            "id": _TAG_TO_800_60[dt["canonical_tag"]]
+                                        }
+                                    }
+                                }
+                                if dt.get("canonical_tag") in _TAG_TO_800_60 else {}
+                            ),
+                            "confidentiality-impact": {"base": (dt.get("impacts") or {}).get("confidentiality") or dt.get("confidentiality", "moderate")},
+                            "integrity-impact":       {"base": (dt.get("impacts") or {}).get("integrity")       or dt.get("integrity",       "moderate")},
+                            "availability-impact":    {"base": (dt.get("impacts") or {}).get("availability")    or dt.get("availability",    "low")},
                         }
                         for dt in data_types
                     ]

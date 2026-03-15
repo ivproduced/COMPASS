@@ -71,8 +71,18 @@ def gap_analysis_impl(
         or "not implemented" in _impl_lower
         or "n/a" in _impl_lower
         or "have no" in _impl_lower
+        or "don't have" in _impl_lower
+        or "dont have" in _impl_lower
+        or "do not have" in _impl_lower
+        or "missing" in _impl_lower
+        or "absent" in _impl_lower
+        or "not in place" in _impl_lower
+        or "haven't" in _impl_lower
+        or "we lack" in _impl_lower
+        or "without" in _impl_lower
         or re.search(r"\bnot\s+\w+ed\b", _impl_lower)  # "not encrypted", "not configured"
         or re.search(r"\bno\s+\w+\b", _impl_lower)     # "no controls", "no process"
+        or re.search(r"\bneed\s+to\b", _impl_lower)     # "need to implement"
     )
 
     is_partial = not is_gap and any(

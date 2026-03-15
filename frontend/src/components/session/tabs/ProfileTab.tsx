@@ -2,6 +2,46 @@ import { useRef } from "react";
 import { useSession } from "@/context/SessionContext";
 import { api } from "@/lib/api";
 
+// Maps internal canonical tags → human-readable FIPS 199 / sensitivity category display names.
+// These are data sensitivity classifications, distinct from NIST SP 800-60 mission-based
+// information types. FTI, PII, PHI, and CUI are defined by statute and agency policy.
+const DATA_TYPE_LABELS: Record<string, string> = {
+  // Personally Identifiable Information (OMB M-07-16)
+  PII:                "Personally Identifiable Information (PII)",
+  PII_SSN:            "Social Security Numbers",
+  PII_BIOMETRIC:      "Biometric Data",
+  PII_LOCATION:       "Location / GPS Data",
+  PII_FINANCIAL:      "Financial Records",
+  // Protected Health Information (HIPAA)
+  PHI:                "Protected Health Information (PHI)",
+  PHI_CLINICAL:       "Clinical / Electronic Health Records",
+  PHI_MENTAL_HEALTH:  "Mental Health Records",
+  PHI_SUBSTANCE_ABUSE:"Substance Abuse Treatment Records",
+  PHI_GENETIC:        "Genetic Data",
+  PHI_BILLING:        "Medical Billing & Insurance Claims",
+  PHI_ADMIN:          "Healthcare Administrative Data",
+  // Federal-specific statutory categories
+  FTI:                "Federal Tax Information (FTI)",
+  CJIS:               "Criminal Justice Information (CJIS)",
+  LAW_ENFORCEMENT:    "Law Enforcement Sensitive",
+  NATIONAL_SECURITY:  "National Security Information",
+  // Controlled Unclassified Information (32 CFR Part 2002)
+  CUI:                "Controlled Unclassified Information (CUI)",
+  CUI_EXPORT:         "Export-Controlled Data (ITAR/EAR)",
+  CUI_LEGAL:          "Legal Proceedings Data",
+  // Payment / credentials
+  PAYMENT_CARD:       "Payment Card Data (PCI)",
+  AUTH_CREDENTIALS:   "Authentication Credentials",
+  CRYPTOGRAPHIC_KEYS: "Cryptographic Keys",
+  // General
+  TRADE_SECRET:       "Trade Secrets",
+  PROPRIETARY:        "Proprietary Information",
+  PUBLIC:             "Publicly Available",
+  INTERNAL:           "Internal Use Only",
+};
+
+const formatDataType = (tag: string) => DATA_TYPE_LABELS[tag] ?? tag;
+
 const Label = ({ children }: { children: React.ReactNode }) => (
   <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider">{children}</p>
 );
@@ -45,14 +85,14 @@ const ProfileTab = () => {
           )}
           {(systemProfile.data_types?.length ?? 0) > 0 && (
             <div className="space-y-1.5">
-              <Label>Data Types</Label>
+              <Label>Sensitive Data Categories</Label>
               <div className="flex flex-wrap gap-2">
                 {systemProfile.data_types!.map((chip) => (
                   <span
                     key={chip}
                     className="bg-background border border-border rounded-full px-2.5 py-1 text-xs font-medium text-foreground"
                   >
-                    {chip}
+                    {formatDataType(chip)}
                   </span>
                 ))}
               </div>

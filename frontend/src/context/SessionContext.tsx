@@ -99,6 +99,7 @@ type Action =
   | { type: "SET_PHASE"; phase: Phase }
   | { type: "ADD_TRANSCRIPT"; entry: TranscriptEntry }
   | { type: "UPDATE_LAST_TRANSCRIPT"; speaker: "user" | "compass"; text: string }
+  | { type: "REPLACE_LAST_TRANSCRIPT"; speaker: "user" | "compass"; text: string }
   | { type: "SET_TRANSCRIPT"; entries: TranscriptEntry[] }
   | { type: "SET_CLASSIFICATION"; data: Classification }
   | { type: "SET_PROFILE"; data: SystemProfile }
@@ -144,6 +145,22 @@ function reducer(state: SessionState, action: Action): SessionState {
         updated[updated.length - 1] = { ...updated[updated.length - 1], text: updated[updated.length - 1].text + action.text };
         return { ...state, transcript: updated };
       }
+      return {
+        ...state,
+        transcript: [
+          ...t,
+          { speaker: action.speaker, text: action.text, timestamp: new Date().toISOString() },
+        ],
+      };
+    }
+    case "REPLACE_LAST_TRANSCRIPT": {
+      const t = state.transcript;
+      if (t.length > 0 && t[t.length - 1].speaker === action.speaker) {
+        const updated = [...t];
+        updated[updated.length - 1] = { ...updated[updated.length - 1], text: action.text };
+        return { ...state, transcript: updated };
+      }
+      // No matching bubble (poll may have overwritten it) — add as new entry.
       return {
         ...state,
         transcript: [
@@ -264,7 +281,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   // ── Assessment loader ──────────────────────────────────────────────────────
 
-  const loadAssessment = useCallback(async (sessionId: string) => {
+  const loadAssessment = useCallback(async (sessionId: string, skipTranscript = false) => {
     try {
       const data = await api.getAssessment(sessionId);
       dispatch({
@@ -283,19 +300,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // New session — no data yet, that's fine
     }
 
-    try {
-      const tx = await api.getTranscript(sessionId);
-      if (tx.entries?.length) {
-        dispatch({ type: "SET_TRANSCRIPT", entries: tx.entries });
+    if (!skipTranscript) {
+      try {
+        const tx = await api.getTranscript(sessionId);
+        if (tx.entries?.length) {
+          dispatch({ type: "SET_TRANSCRIPT", entries: tx.entries });
+        }
+      } catch {
+        // Empty transcript — ok
       }
-    } catch {
-      // Empty transcript — ok
     }
   }, []);
 
   const refreshAssessment = useCallback(async () => {
     if (stateRef.current.sessionId) {
-      await loadAssessment(stateRef.current.sessionId);
+      // Skip transcript reload during polling — it overwrites
+      // in-progress streaming bubbles from the WebSocket.
+      await loadAssessment(stateRef.current.sessionId, true);
     }
   }, [loadAssessment]);
 
@@ -318,11 +339,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         case "transcript": {
           const speaker = msg.speaker === "compass" ? "compass" : "user";
           const text = msg.text as string;
-          // Always UPDATE rather than ADD — UPDATE appends to the current speaker's
-          // bubble (or creates a new one when the speaker changes). Using ADD for
-          // final=true would create a duplicate second bubble containing only the
-          // last streaming chunk, abandoning the accumulated partial bubble.
-          dispatch({ type: "UPDATE_LAST_TRANSCRIPT", speaker, text });
+          if (!text) break;
+
+          if (speaker === "compass" && !msg.final) {
+            // Stream compass chunks into bubble in real-time.
+            dispatch({ type: "UPDATE_LAST_TRANSCRIPT", speaker, text });
+          } else if (speaker === "compass" && msg.final) {
+            // Replace streamed compass bubble with clean joined text.
+            dispatch({ type: "REPLACE_LAST_TRANSCRIPT", speaker, text });
+          } else if (speaker === "user" && msg.final) {
+            // User text sent as one clean message (before compass streams).
+            dispatch({
+              type: "ADD_TRANSCRIPT",
+              entry: { speaker, text, timestamp: new Date().toISOString() },
+            });
+          }
           break;
         }
 
@@ -344,7 +375,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           break;
         }
 
-        case "controls_found":
+        case "controls_found": {
+          // Add each control to state so ControlsTab populates immediately
+          const ctrlList = (data?.controls ?? []) as Array<Record<string, unknown>>;
+          for (const c of ctrlList) {
+            const ctrl = c as import("./SessionContext").ControlMapping;
+            if (ctrl?.control_id) dispatch({ type: "UPSERT_CONTROL", data: ctrl });
+          }
           dispatch({
             type: "SET_LATEST_EVENT",
             event: {
@@ -354,6 +391,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             },
           });
           break;
+        }
 
         case "control_mapped":
         case "control_assessed": {

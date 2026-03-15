@@ -76,13 +76,24 @@ def control_lookup_impl(
         results = [v for k, v in catalog.items() if k.startswith(fam + "-")]
 
     if keyword:
-        kw = keyword.lower()
-        kw_results = [
-            v for v in catalog.values()
-            if kw in v.get("title", "").lower()
-            or kw in v.get("description", "").lower()
-            or kw in v.get("supplemental_guidance", "").lower()
-        ]
+        # Split query into individual words and match controls containing ANY word.
+        # Stopwords are skipped; controls matching more words rank higher.
+        _STOP = {"the", "a", "an", "and", "or", "for", "of", "to", "in", "is", "it", "on", "at", "by", "with"}
+        words = [w for w in keyword.lower().split() if w not in _STOP and len(w) > 1]
+        if not words:
+            words = [keyword.lower()]
+        scored: list[tuple[int, dict]] = []
+        for ctrl in catalog.values():
+            haystack = " ".join([
+                ctrl.get("title", ""),
+                ctrl.get("description", ""),
+                ctrl.get("supplemental_guidance", ""),
+            ]).lower()
+            hits = sum(1 for w in words if w in haystack)
+            if hits:
+                scored.append((hits, ctrl))
+        scored.sort(key=lambda t: t[0], reverse=True)
+        kw_results = [ctrl for _, ctrl in scored]
         if results:
             # Intersect with family filter
             ids_in_family = {r.get("id") for r in results}

@@ -69,7 +69,7 @@ DATA_TYPE_IMPACT_MAP: dict[str, dict[str, str]] = {
     "CUI_EXPORT":           {"confidentiality": "high",     "integrity": "high",     "availability": "moderate"},
     "CUI_LEGAL":            {"confidentiality": "high",     "integrity": "high",     "availability": "moderate"},
     # ── Federal / tax / law enforcement ──────────────────────────────
-    "FTI":                  {"confidentiality": "high",     "integrity": "high",     "availability": "high"},
+    "FTI":                  {"confidentiality": "high",     "integrity": "high",     "availability": "moderate"},
     "CJIS":                 {"confidentiality": "high",     "integrity": "high",     "availability": "high"},
     "LAW_ENFORCEMENT":      {"confidentiality": "high",     "integrity": "high",     "availability": "moderate"},
     "NATIONAL_SECURITY":    {"confidentiality": "high",     "integrity": "high",     "availability": "high"},
@@ -100,6 +100,9 @@ CONTROL_COUNT: dict[int, int] = {1: 156, 2: 325, 3: 421}
 def classify_system_impl(
     data_types: list[str],
     system_description: str = "",
+    confidentiality_override: str = "",
+    integrity_override: str = "",
+    availability_override: str = "",
 ) -> dict:
     """
     Classify a system using FIPS 199 high-water-mark methodology.
@@ -107,6 +110,9 @@ def classify_system_impl(
     Args:
         data_types: List of data type identifiers (e.g. ["PII", "FTI"]).
         system_description: Optional free-text system description.
+        confidentiality_override: Explicit confidentiality level ("low", "moderate", "high").
+        integrity_override: Explicit integrity level ("low", "moderate", "high").
+        availability_override: Explicit availability level ("low", "moderate", "high").
 
     Returns:
         Dict with fips_199_classification, fedramp_baseline, control_count.
@@ -127,6 +133,15 @@ def classify_system_impl(
             matched.append(dt)
         else:
             unrecognized.append(dt)
+
+    # Apply explicit CIA overrides — these represent the system owner's stated
+    # impact levels, which take precedence over the data-type high-water mark.
+    if confidentiality_override.lower() in IMPACT_RANK:
+        max_c = IMPACT_RANK[confidentiality_override.lower()]
+    if integrity_override.lower() in IMPACT_RANK:
+        max_i = IMPACT_RANK[integrity_override.lower()]
+    if availability_override.lower() in IMPACT_RANK:
+        max_a = IMPACT_RANK[availability_override.lower()]
 
     overall = max(max_c, max_i, max_a)
 

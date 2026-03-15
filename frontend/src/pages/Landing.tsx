@@ -29,13 +29,6 @@ const Landing = () => {
         <span className="font-sans font-bold text-base tracking-tight text-foreground">
           COMPASS
         </span>
-        <Button
-          variant="outline"
-          className="border-primary text-primary hover:bg-primary/10"
-          onClick={() => {}}
-        >
-          Sign In
-        </Button>
       </header>
 
       {/* Hero */}

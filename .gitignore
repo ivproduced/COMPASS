@@ -61,3 +61,4 @@ coverage.xml
 
 # ---- Internal (private docs, notes, credentials hints) ---------------------
 .internal/
+test_live_api.py
