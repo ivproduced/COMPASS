@@ -134,8 +134,9 @@ class TestOSCALGenerator:
         ssp = result["content"]["system-security-plan"]
         impls = ssp["control-implementation"].get("implemented-requirements", [])
         control_ids = [i["control-id"] for i in impls]
-        assert "AC-2" in control_ids
-        assert "SC-7" in control_ids
+        # OSCAL standard uses lowercase control IDs (e.g. "ac-2")
+        assert "ac-2" in control_ids
+        assert "sc-7" in control_ids
 
 
 class TestOSCALValidator:

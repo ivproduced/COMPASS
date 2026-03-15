@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
 
 from google.adk.tools import FunctionTool
@@ -25,15 +26,20 @@ _INLINE_MODERATE_FAMILIES = [
 
 def _load_baseline(baseline: str = "moderate") -> list[str]:
     """Return list of control IDs in the specified FedRAMP baseline."""
-    path = _KNOWLEDGE_DIR / "fedramp_moderate" / "baseline_controls.json"
+    key = baseline.lower().replace("-", "_")
+    # Try new fedramp/ directory first
+    path = _KNOWLEDGE_DIR / "fedramp" / f"fedramp_rev5_{key}_baseline.json"
+    if not path.exists():
+        # Legacy path fallback
+        path = _KNOWLEDGE_DIR / "fedramp_moderate" / "baseline_controls.json"
     if path.exists():
         try:
             with open(path, encoding="utf-8") as f:
                 data = json.load(f)
+            # Supports both plain string arrays and object arrays with "id" key
             return [c["id"] if isinstance(c, dict) else c for c in data]
         except Exception as exc:
             logger.warning("Could not load baseline file: %s", exc)
-    # Inline fallback
     return []
 
 
@@ -56,17 +62,21 @@ def gap_analysis_impl(
         Dict with gap assessment, risk level, and remediation guidance.
     """
     ctrl_id = control_id.strip().upper()
+    _impl_lower = current_implementation.lower()
 
     # Determine gap severity based on heuristics
     is_gap = bool(
         not current_implementation
-        or "not yet" in current_implementation.lower()
-        or "not implemented" in current_implementation.lower()
-        or "n/a" in current_implementation.lower()
+        or "not yet" in _impl_lower
+        or "not implemented" in _impl_lower
+        or "n/a" in _impl_lower
+        or "have no" in _impl_lower
+        or re.search(r"\bnot\s+\w+ed\b", _impl_lower)  # "not encrypted", "not configured"
+        or re.search(r"\bno\s+\w+\b", _impl_lower)     # "no controls", "no process"
     )
 
     is_partial = not is_gap and any(
-        phrase in current_implementation.lower()
+        phrase in _impl_lower
         for phrase in ["partial", "limited", "in progress", "planned", "some"]
     )
 

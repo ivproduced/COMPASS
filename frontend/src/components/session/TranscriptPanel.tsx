@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import { useSession } from "@/context/SessionContext";
 
 const TranscriptPanel = () => {
-  const { transcript, isListening, isConnected, sendTextMessage } = useSession();
+  const { transcript, isListening, isConnected, sessionId, sendTextMessage } = useSession();
   const bottomRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState("");
 
@@ -68,6 +68,11 @@ const TranscriptPanel = () => {
             ● COMPASS is listening…
           </p>
         )}
+        {!isConnected && sessionId && !isListening && (
+          <p className="text-[12px] text-[#64748B]">
+            Voice unavailable — type below to chat with COMPASS.
+          </p>
+        )}
         <div className="flex gap-2">
           <input
             className="flex-1 bg-background border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
@@ -78,7 +83,7 @@ const TranscriptPanel = () => {
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim() || !isConnected}
+            disabled={!input.trim()}
             className="px-3 py-2 bg-primary text-primary-foreground text-sm rounded-md disabled:opacity-40 hover:bg-primary/90 transition-colors"
           >
             Send

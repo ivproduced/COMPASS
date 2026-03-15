@@ -28,7 +28,6 @@ from typing import AsyncIterator
 
 import uvicorn
 from fastapi import (
-    Depends,
     FastAPI,
     File,
     HTTPException,
@@ -82,6 +81,141 @@ genai_client = _build_genai_client()
 # ------------------------------------------------------------------
 # Live API config — built once, reused per session
 # ------------------------------------------------------------------
+# Tool declarations — used by the sidecar generate_content call.
+# gemini-2.5-flash-native-audio-latest only supports bidiGenerateContent (no
+# function calling in Live API), so tools are executed via a parallel
+# generate_content call after each completed user turn.
+TOOL_DECLARATIONS = [
+    types.FunctionDeclaration(
+        name="classify_system",
+        description="Classify a system using FIPS 199 based on data types processed.",
+        parameters=types.Schema(
+            type="OBJECT",
+            properties={
+                "data_types": types.Schema(
+                    type="ARRAY",
+                    items=types.Schema(type="STRING"),
+                    description=(
+                        "List of canonical data type tags. Use the most specific tag available. "
+                        "PHI subtypes: PHI_CLINICAL (EHR/patient records), PHI_MENTAL_HEALTH, "
+                        "PHI_SUBSTANCE_ABUSE, PHI_GENETIC, PHI_BILLING (insurance/billing), PHI_ADMIN. "
+                        "PII subtypes: PII, PII_SSN, PII_FINANCIAL, PII_BIOMETRIC, PII_LOCATION. "
+                        "Other: FTI, CJIS, CUI, CUI_CONTROLLED, CUI_EXPORT, FINANCIAL, PAYMENT_CARD, "
+                        "AUTH_CREDENTIALS, CRYPTOGRAPHIC_KEYS, TRADE_SECRET, PUBLIC, INTERNAL."
+                    ),
+                ),
+                "system_description": types.Schema(
+                    type="STRING",
+                    description="Optional system description",
+                ),
+            },
+            required=["data_types"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="map_data_types",
+        description=(
+            "Map free-text data type descriptions to canonical tags and C/I/A impact levels. "
+            "Pass the most specific phrase possible so the right tag is chosen. "
+            "PHI subtypes: 'medical records'→PHI_CLINICAL, 'mental health records'→PHI_MENTAL_HEALTH, "
+            "'substance abuse records'→PHI_SUBSTANCE_ABUSE, 'genetic data'→PHI_GENETIC, "
+            "'medical billing'→PHI_BILLING, 'health care administration'→PHI_ADMIN. "
+            "Other examples: 'electronic health records'→PHI_CLINICAL, 'EHR'→PHI_CLINICAL, "
+            "'ssn'→PII_SSN, 'credit card data'→PAYMENT_CARD, 'encryption keys'→CRYPTOGRAPHIC_KEYS, "
+            "'criminal justice information'→CJIS, 'federal tax information'→FTI."
+        ),
+        parameters=types.Schema(
+            type="OBJECT",
+            properties={
+                "descriptions": types.Schema(
+                    type="ARRAY",
+                    items=types.Schema(type="STRING"),
+                    description="List of specific data type phrases, one per item",
+                )
+            },
+            required=["descriptions"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="search_controls",
+        description="Semantic search over NIST 800-53 controls for a component or requirement.",
+        parameters=types.Schema(
+            type="OBJECT",
+            properties={
+                "query": types.Schema(
+                    type="STRING",
+                    description="Component or requirement to map to controls",
+                ),
+                "family_filter": types.Schema(
+                    type="STRING",
+                    description="Optional: restrict to a control family (AC, SC, AU…)",
+                ),
+            },
+            required=["query"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="control_lookup",
+        description="Look up a specific NIST 800-53 control by ID.",
+        parameters=types.Schema(
+            type="OBJECT",
+            properties={
+                "control_id": types.Schema(
+                    type="STRING",
+                    description="Control ID (e.g. AC-4, SC-7(3))",
+                ),
+                "keyword": types.Schema(
+                    type="STRING",
+                    description="Keyword to search by title or description",
+                ),
+            },
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="gap_analysis",
+        description="Analyze a compliance gap for a specific control.",
+        parameters=types.Schema(
+            type="OBJECT",
+            properties={
+                "control_id": types.Schema(type="STRING"),
+                "current_implementation": types.Schema(type="STRING"),
+                "required_implementation": types.Schema(type="STRING"),
+                "component": types.Schema(type="STRING"),
+            },
+            required=["control_id", "current_implementation"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="generate_oscal",
+        description="Generate OSCAL-formatted SSP or POA&M from session assessment data.",
+        parameters=types.Schema(
+            type="OBJECT",
+            properties={
+                "document_type": types.Schema(
+                    type="STRING",
+                    enum=["ssp", "poam", "assessment_results"],
+                ),
+                "system_name": types.Schema(type="STRING"),
+                "system_description": types.Schema(type="STRING"),
+                "fips_199_level": types.Schema(type="STRING"),
+            },
+            required=["document_type"],
+        ),
+    ),
+    types.FunctionDeclaration(
+        name="threat_lookup",
+        description="Query MITRE ATLAS AI/ML threat mappings to find mitigating controls.",
+        parameters=types.Schema(
+            type="OBJECT",
+            properties={
+                "query": types.Schema(type="STRING"),
+                "technique_id": types.Schema(type="STRING"),
+                "tactic": types.Schema(type="STRING"),
+            },
+        ),
+    ),
+]
+
 LIVE_CONFIG = types.LiveConnectConfig(
     response_modalities=["AUDIO"],
     speech_config=types.SpeechConfig(
@@ -93,141 +227,9 @@ LIVE_CONFIG = types.LiveConnectConfig(
     ),
     input_audio_transcription=types.AudioTranscriptionConfig(),
     output_audio_transcription=types.AudioTranscriptionConfig(),
-    tools=[
-        types.Tool(
-            function_declarations=[
-                types.FunctionDeclaration(
-                    name="classify_system",
-                    description="Classify a system using FIPS 199 based on data types processed.",
-                    parameters=types.Schema(
-                        type="OBJECT",
-                        properties={
-                            "data_types": types.Schema(
-                                type="ARRAY",
-                                items=types.Schema(type="STRING"),
-                                description="List of data types (e.g. PII, PHI, FTI)",
-                            ),
-                            "system_description": types.Schema(
-                                type="STRING",
-                                description="Optional system description",
-                            ),
-                        },
-                        required=["data_types"],
-                    ),
-                ),
-                types.FunctionDeclaration(
-                    name="search_controls",
-                    description="Semantic search over NIST 800-53 controls for a component or requirement.",
-                    parameters=types.Schema(
-                        type="OBJECT",
-                        properties={
-                            "query": types.Schema(
-                                type="STRING",
-                                description="Component or requirement to map to controls",
-                            ),
-                            "family_filter": types.Schema(
-                                type="STRING",
-                                description="Optional: restrict to a control family (AC, SC, AU…)",
-                            ),
-                        },
-                        required=["query"],
-                    ),
-                ),
-                types.FunctionDeclaration(
-                    name="control_lookup",
-                    description="Look up a specific NIST 800-53 control by ID.",
-                    parameters=types.Schema(
-                        type="OBJECT",
-                        properties={
-                            "control_id": types.Schema(
-                                type="STRING",
-                                description="Control ID (e.g. AC-4, SC-7(3))",
-                            ),
-                            "keyword": types.Schema(
-                                type="STRING",
-                                description="Keyword to search by title or description",
-                            ),
-                        },
-                    ),
-                ),
-                types.FunctionDeclaration(
-                    name="gap_analysis",
-                    description="Analyze a compliance gap for a specific control.",
-                    parameters=types.Schema(
-                        type="OBJECT",
-                        properties={
-                            "control_id": types.Schema(type="STRING"),
-                            "current_implementation": types.Schema(type="STRING"),
-                            "required_implementation": types.Schema(type="STRING"),
-                            "component": types.Schema(type="STRING"),
-                        },
-                        required=["control_id", "current_implementation"],
-                    ),
-                ),
-                types.FunctionDeclaration(
-                    name="generate_oscal",
-                    description="Generate OSCAL-formatted SSP or POA&M from session assessment data.",
-                    parameters=types.Schema(
-                        type="OBJECT",
-                        properties={
-                            "document_type": types.Schema(
-                                type="STRING",
-                                enum=["ssp", "poam", "assessment_results"],
-                            ),
-                            "system_name": types.Schema(type="STRING"),
-                            "system_description": types.Schema(type="STRING"),
-                            "fips_199_level": types.Schema(type="STRING"),
-                        },
-                        required=["document_type"],
-                    ),
-                ),
-                types.FunctionDeclaration(
-                    name="map_data_types",
-                    description="Map free-text data type descriptions to canonical tags and C/I/A impact levels.",
-                    parameters=types.Schema(
-                        type="OBJECT",
-                        properties={
-                            "descriptions": types.Schema(
-                                type="ARRAY",
-                                items=types.Schema(type="STRING"),
-                            )
-                        },
-                        required=["descriptions"],
-                    ),
-                ),
-                types.FunctionDeclaration(
-                    name="threat_lookup",
-                    description="Query MITRE ATLAS AI/ML threat mappings to find mitigating controls.",
-                    parameters=types.Schema(
-                        type="OBJECT",
-                        properties={
-                            "query": types.Schema(type="STRING"),
-                            "technique_id": types.Schema(type="STRING"),
-                            "tactic": types.Schema(type="STRING"),
-                        },
-                    ),
-                ),
-                types.FunctionDeclaration(
-                    name="validate_oscal",
-                    description="Validate an OSCAL JSON document for structural completeness against NIST OSCAL 1.1.2.",
-                    parameters=types.Schema(
-                        type="OBJECT",
-                        properties={
-                            "content": types.Schema(
-                                type="OBJECT",
-                                description="The full OSCAL JSON document to validate",
-                            ),
-                            "document_type": types.Schema(
-                                type="STRING",
-                                enum=["ssp", "poam", "assessment_results"],
-                            ),
-                        },
-                        required=["content", "document_type"],
-                    ),
-                ),
-            ]
-        )
-    ],
+    # NOTE: tools intentionally omitted — native-audio Live API models only
+    # support bidiGenerateContent (no function calling). Tools run via sidecar
+    # generate_content call in analyze_transcript_for_tools().
     system_instruction=types.Content(
         role="user",
         parts=[types.Part(text=COMPASS_SYSTEM_PROMPT)],
@@ -248,7 +250,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     # Validate Gemini connectivity at startup
     try:
-        probe = await genai_client.aio.models.generate_content(
+        await genai_client.aio.models.generate_content(
             model=settings.gemini_model,
             contents="Respond with OK.",
             config=types.GenerateContentConfig(
@@ -313,7 +315,18 @@ async def execute_tool(function_name: str, args: dict, session_id: str) -> dict:
             if args.get("system_description"):
                 profile["description"] = args["system_description"]
             await firestore_service.set_system_profile(session_id, profile)
-            result["_event"] = {"type": "classification", "data": result}
+            # Normalize to the flat shape the frontend Classification interface expects
+            fips = result.get("fips_199_classification", {})
+            cls_ui = {
+                "level": fips.get("overall", "moderate"),
+                "confidentiality": fips.get("confidentiality", "low"),
+                "integrity": fips.get("integrity", "low"),
+                "availability": fips.get("availability", "low"),
+                "control_count": result.get("control_count", 0),
+                "rationale": result.get("rationale", ""),
+                "fedramp_baseline": result.get("fedramp_baseline", ""),
+            }
+            result["_event"] = {"type": "classification", "data": cls_ui}
             return result
 
         # ---- search_controls ----------------------------------------
@@ -481,8 +494,182 @@ async def execute_tool(function_name: str, args: dict, session_id: str) -> dict:
 
 
 # ------------------------------------------------------------------
-# WebSocket: Gemini Live API proxy
+# Sidecar tool executor — runs after each user turn via generate_content
+# (Live API native-audio models don't support function calling)
 # ------------------------------------------------------------------
+
+_PHASE_MAP = {
+    "classification": "classification",
+    "controls_found": "mapping",
+    "control_mapped": "mapping",
+    "gap_found": "gaps",
+    "control_assessed": "gaps",
+    "oscal_ready": "oscal",
+}
+
+
+def _sidecar_allowed_tools(cls: dict | None, num_controls: int) -> list[str]:
+    """Return the allowed tool names for the sidecar at the current assessment stage.
+    Using mode=ANY forces Gemini to call a function — we restrict the list so it
+    only picks tools that are actually appropriate right now."""
+    if not cls:
+        # No classification yet — force classify_system directly.
+        # Gemini will extract data types from the conversation and pass them in.
+        return ["classify_system"]
+    if num_controls < 3:
+        # Post-classification: start mapping controls
+        return ["search_controls", "control_lookup"]
+    # Enough controls mapped — do gap analysis or OSCAL
+    return ["gap_analysis", "generate_oscal"]
+
+
+async def analyze_transcript_for_tools(
+    session_id: str,
+    websocket: WebSocket,
+    user_text: str,
+    gemini_session=None,  # AsyncLiveSession — injected so results feed back into Live context
+) -> None:
+    """After each user turn, call generate_content (gemini-2.5-pro) to decide
+    which tools to invoke, push UI events to the client, and inject a context
+    note back into the Live session so COMPASS stops re-asking for known info."""
+    if len(user_text.strip()) < 20:
+        return
+    try:
+        session = await firestore_service.get_session(session_id) or {}
+        transcript = await firestore_service.get_transcript(session_id, limit=15)
+        convo_text = "\n".join(
+            f"{e.get('speaker', '').upper()}: {e.get('text', '')}"
+            for e in transcript
+            if e.get("text")
+        )
+
+        cls = session.get("classification")
+        profile = session.get("systemProfile", {})
+        state_parts = []
+        if cls:
+            state_parts.append(f"Already classified: {cls.get('fedramp_baseline', '')}")
+        if profile.get("data_types"):
+            state_parts.append(f"Data types mapped: {profile['data_types']}")
+        num_controls = len(await firestore_service.get_control_mappings(session_id) or [])
+        if num_controls:
+            state_parts.append(f"Controls mapped: {num_controls}")
+        state_str = "\n".join(state_parts) or "Nothing assessed yet."
+
+        allowed_tools = _sidecar_allowed_tools(cls, num_controls)
+
+        prompt = f"""You are a compliance-assessment orchestrator.
+
+Current session state:
+{state_str}
+
+Recent conversation:
+{convo_text}
+
+Latest user message: {user_text}
+
+You MUST call one of the available tools to advance the compliance assessment.
+Choose the single most appropriate tool based on the conversation above."""
+
+        response = await genai_client.aio.models.generate_content(
+            model=settings.gemini_model,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                tools=[types.Tool(function_declarations=TOOL_DECLARATIONS)],
+                tool_config=types.ToolConfig(
+                    function_calling_config=types.FunctionCallingConfig(
+                        mode="ANY",
+                        allowed_function_names=allowed_tools,
+                    )
+                ),
+            ),
+        )
+
+        for candidate in response.candidates or []:
+            for part in (candidate.content.parts or []) if candidate.content else []:
+                if hasattr(part, "function_call") and part.function_call:
+                    fn_name = part.function_call.name
+                    fn_args = dict(part.function_call.args) if part.function_call.args else {}
+                    logger.info("Sidecar tool: %s(%s)", fn_name, list(fn_args.keys()))
+                    result = await execute_tool(fn_name, fn_args, session_id)
+                    event = result.pop("_event", None)
+                    if event:
+                        try:
+                            await websocket.send_text(json.dumps(event))
+                            if phase := _PHASE_MAP.get(event.get("type", "")):
+                                await websocket.send_text(json.dumps({
+                                    "type": "phase_change",
+                                    "phase": phase,
+                                }))
+                        except Exception:
+                            pass  # WS may already be closed
+
+                    # Build a context note to inject back into the Live session
+                    context_note = _build_context_note(fn_name, fn_args, result)
+                    if context_note and gemini_session:
+                        try:
+                            await gemini_session.send_client_content(
+                                turns=[
+                                    types.Content(
+                                        role="user",
+                                        parts=[types.Part(text=context_note)],
+                                    )
+                                ],
+                                turn_complete=False,  # context only — don't trigger a response
+                            )
+                            logger.info("Sidecar context injected: %s", context_note[:80])
+                        except Exception as inj_exc:
+                            logger.warning("Context injection failed: %s", inj_exc)
+    except Exception as exc:
+        logger.error("Sidecar tool analysis failed: %s", exc)
+
+
+def _build_context_note(fn_name: str, fn_args: dict, result: dict) -> str:
+    """Build a short '[COMPASS CONTEXT UPDATE]' note to feed back into the Live session."""
+    try:
+        if fn_name == "classify_system":
+            cls = result.get("fips_199_classification", {})
+            baseline = result.get("fedramp_baseline", "")
+            matched = result.get("data_types_matched", fn_args.get("data_types", []))
+            return (
+                f"[COMPASS CONTEXT UPDATE] System classification complete. "
+                f"Data types confirmed: {', '.join(matched)}. "
+                f"FIPS 199: C={cls.get('confidentiality','?')} I={cls.get('integrity','?')} "
+                f"A={cls.get('availability','?')}. Baseline: {baseline}. "
+                f"Do NOT ask about data types, impact level, or FedRAMP baseline again."
+            )
+        if fn_name == "map_data_types":
+            tags = result.get("canonical_tags", [])
+            return (
+                f"[COMPASS CONTEXT UPDATE] Data types mapped: {', '.join(tags)}. "
+                f"Do not ask the user to re-describe their data types."
+            )
+        if fn_name == "search_controls":
+            controls = result.get("controls", [])
+            ids = [c.get("id", "") for c in controls[:6] if c.get("id")]
+            return (
+                f"[COMPASS CONTEXT UPDATE] Control mapping complete. "
+                f"Top controls identified: {', '.join(ids)}. "
+                f"You may proceed to gap analysis."
+            )
+        if fn_name == "gap_analysis":
+            ctrl = fn_args.get("control_id", "")
+            status = result.get("implementation_status", "")
+            risk = result.get("risk_level", "")
+            return (
+                f"[COMPASS CONTEXT UPDATE] Gap analysis for {ctrl}: "
+                f"status={status}, risk={risk}. "
+                f"{'Gap confirmed — remediation required.' if result.get('is_gap') else 'Control satisfied.'}"
+            )
+        if fn_name == "generate_oscal":
+            doc_type = fn_args.get("document_type", "document")
+            return (
+                f"[COMPASS CONTEXT UPDATE] OSCAL {doc_type.upper()} generated successfully. "
+                f"Assessment complete. You may now summarise findings for the architect."
+            )
+    except Exception:
+        pass
+    return ""
+
 
 @app.websocket("/ws/live")
 async def live_session(websocket: WebSocket):
@@ -532,6 +719,24 @@ async def live_session(websocket: WebSocket):
             config=LIVE_CONFIG,
         ) as gemini_session:
 
+            # Inject prior conversation history so COMPASS remembers context on reconnect
+            existing_tx = await firestore_service.get_transcript(session_id, limit=30)
+            if existing_tx:
+                history_turns = []
+                for entry in existing_tx:
+                    role = "user" if entry.get("speaker") == "user" else "model"
+                    text = (entry.get("text") or "").strip()
+                    if text:
+                        history_turns.append(
+                            types.Content(role=role, parts=[types.Part(text=text)])
+                        )
+                if history_turns:
+                    logger.info("Injecting %d history turns into Gemini context", len(history_turns))
+                    await gemini_session.send_client_content(
+                        turns=history_turns,
+                        turn_complete=False,  # load context; don't trigger a response
+                    )
+
             async def receive_from_client():
                 """Forward client messages to Gemini."""
                 try:
@@ -547,14 +752,10 @@ async def live_session(websocket: WebSocket):
                         if "bytes" in msg:
                             audio_data = msg["bytes"]
                             logger.info("audio chunk from client: %d bytes", len(audio_data))
-                            await gemini_session.send(
-                                input=types.LiveClientRealtimeInput(
-                                    media_chunks=[
-                                        types.Blob(
-                                            data=audio_data,
-                                            mime_type="audio/pcm;rate=16000",
-                                        )
-                                    ]
+                            await gemini_session.send_realtime_input(
+                                audio=types.Blob(
+                                    data=audio_data,
+                                    mime_type="audio/pcm;rate=16000",
                                 )
                             )
 
@@ -569,39 +770,35 @@ async def live_session(websocket: WebSocket):
                                 if gcs_url:
                                     try:
                                         image_bytes = storage_service.get_diagram_bytes(gcs_url)
-                                        await gemini_session.send(
-                                            input=types.LiveClientContent(
-                                                turns=[
-                                                    types.Content(
-                                                        role="user",
-                                                        parts=[
-                                                            types.Part(
-                                                                inline_data=types.Blob(
-                                                                    data=image_bytes,
-                                                                    mime_type="image/png",
-                                                                )
-                                                            ),
-                                                            types.Part(
-                                                                text="I'm sharing my architecture diagram. Please analyze it and identify components, data flows, and any compliance observations."
-                                                            ),
-                                                        ],
-                                                    )
-                                                ]
-                                            )
+                                        await gemini_session.send_client_content(
+                                            turns=[
+                                                types.Content(
+                                                    role="user",
+                                                    parts=[
+                                                        types.Part(
+                                                            inline_data=types.Blob(
+                                                                data=image_bytes,
+                                                                mime_type="image/png",
+                                                            )
+                                                        ),
+                                                        types.Part(
+                                                            text="I'm sharing my architecture diagram. Please analyze it and identify components, data flows, and any compliance observations."
+                                                        ),
+                                                    ],
+                                                )
+                                            ],
+                                            turn_complete=True,
                                         )
                                     except Exception as exc:
                                         logger.error("Diagram load failed: %s", exc)
 
                             elif msg_type == "end_of_turn":
-                                    # Frontend button pressed stop — explicitly finalize
-                                    # the current audio stream so Gemini can emit input
-                                    # transcription and start its response immediately.
-                                    logger.info("end_of_turn received — sending audio_stream_end to Gemini")
-                                    await gemini_session.send(
-                                        input=types.LiveClientRealtimeInput(
-                                            audio_stream_end=True
-                                        )
-                                    )
+                                    # For native-audio models, VAD handles turn detection
+                                    # automatically. Sending audio_stream_end=True would
+                                    # permanently close the stream for the session.
+                                    # Just stop sending audio — Gemini will detect the
+                                    # silence and respond on its own.
+                                    logger.info("end_of_turn received — relying on VAD (no audio_stream_end)")
 
                             elif msg_type == "end_session":
                                 await firestore_service.update_session(session_id, {"status": "completed"})
@@ -616,7 +813,8 @@ async def live_session(websocket: WebSocket):
                 """Forward Gemini responses to client."""
                 try:
                     logger.info("send_to_client: waiting for Gemini responses")
-                    async for response in gemini_session.receive():
+                    while True:  # receive() covers one turn; loop for multi-turn
+                      async for response in gemini_session.receive():
                         # Log the full raw structure so we can debug what comes back
                         logger.info("Gemini raw response: data=%s sc=%s text=%s tool=%s",
                             len(response.data) if response.data else None,
@@ -672,6 +870,10 @@ async def live_session(websocket: WebSocket):
                                         "speaker": "user",
                                         "text": t.text,
                                     })
+                                    # Kick off sidecar tool execution after each user turn
+                                    asyncio.create_task(
+                                        analyze_transcript_for_tools(session_id, websocket, t.text, gemini_session)
+                                    )
 
                         # Text modality fallback (non-native-audio models)
                         if not sc and response.text:
@@ -686,46 +888,9 @@ async def live_session(websocket: WebSocket):
                                 "text": response.text,
                             })
 
-                        # Function call — execute and return result
-                        if response.tool_call:
-                            for fn_call in response.tool_call.function_calls:
-                                fn_name = fn_call.name
-                                fn_args = dict(fn_call.args) if fn_call.args else {}
-                                logger.info("Tool call: %s(%s)", fn_name, list(fn_args.keys()))
-
-                                result = await execute_tool(fn_name, fn_args, session_id)
-
-                                # Pop the structured event and forward to client
-                                event = result.pop("_event", None)
-                                if event:
-                                    await websocket.send_text(json.dumps(event))
-                                    # Also send phase_change if the event implies one
-                                    phase_map = {
-                                        "classification": "classification",
-                                        "controls_found": "mapping",
-                                        "control_mapped": "mapping",
-                                        "gap_found": "gaps",
-                                        "control_assessed": "gaps",
-                                        "oscal_ready": "oscal",
-                                    }
-                                    if phase := phase_map.get(event.get("type", "")):
-                                        await websocket.send_text(json.dumps({
-                                            "type": "phase_change",
-                                            "phase": phase,
-                                        }))
-
-                                # Return function result to Gemini
-                                await gemini_session.send(
-                                    input=types.LiveClientToolResponse(
-                                        function_responses=[
-                                            types.FunctionResponse(
-                                                name=fn_name,
-                                                id=fn_call.id,
-                                                response={"result": result},
-                                            )
-                                        ]
-                                    )
-                                )
+                        # NOTE: tool_call handling removed — native-audio Live API models
+                        # do not support function calling.  Tools run via the
+                        # analyze_transcript_for_tools() sidecar above.
 
                 except WebSocketDisconnect:
                     logger.info("send_to_client: browser disconnected cleanly")
@@ -751,14 +916,10 @@ async def live_session(websocket: WebSocket):
                 try:
                     while True:
                         await asyncio.sleep(25)
-                        await gemini_session.send(
-                            input=types.LiveClientRealtimeInput(
-                                media_chunks=[
-                                    types.Blob(
-                                        data=_SILENCE,
-                                        mime_type="audio/pcm;rate=16000",
-                                    )
-                                ]
+                        await gemini_session.send_realtime_input(
+                            audio=types.Blob(
+                                data=_SILENCE,
+                                mime_type="audio/pcm;rate=16000",
                             )
                         )
                 except Exception:
@@ -783,7 +944,10 @@ async def live_session(websocket: WebSocket):
     finally:
         if session_id:
             await firestore_service.update_session(session_id, {"status": "paused"})
-        await websocket.close()
+        try:
+            await websocket.close()
+        except Exception:
+            pass  # Already closed by the client — suppress ASGI double-close error
 
 
 # ------------------------------------------------------------------
@@ -852,7 +1016,26 @@ async def get_assessment(session_id: str):
     gaps = await firestore_service.get_gap_findings(session_id)
     oscal_outputs = await firestore_service.get_oscal_outputs(session_id)
 
-    baseline_count = session.get("classification", {}).get("control_count", 325) if session.get("classification") else 325
+    cls_raw = session.get("classification")
+    # Normalize to flat UI shape (handle both old nested and new flat formats)
+    if cls_raw:
+        fips = cls_raw.get("fips_199_classification", {})
+        if fips:
+            classification_out: dict | None = {
+                "level": fips.get("overall", "moderate"),
+                "confidentiality": fips.get("confidentiality", "low"),
+                "integrity": fips.get("integrity", "low"),
+                "availability": fips.get("availability", "low"),
+                "control_count": cls_raw.get("control_count", 0),
+                "rationale": cls_raw.get("rationale", ""),
+                "fedramp_baseline": cls_raw.get("fedramp_baseline", ""),
+            }
+        else:
+            classification_out = cls_raw  # Already normalized
+    else:
+        classification_out = None
+
+    baseline_count = (classification_out or {}).get("control_count", 325)
     score = ComplianceScore.from_mappings(  # type: ignore[arg-type]
         mappings=[type("M", (), m)() for m in mappings],  # type: ignore
         baseline_total=baseline_count,
@@ -861,7 +1044,7 @@ async def get_assessment(session_id: str):
     return {
         "sessionId": session_id,
         "systemProfile": session.get("systemProfile", {}),
-        "classification": session.get("classification"),
+        "classification": classification_out,
         "conversationPhase": session.get("conversationPhase", "intake"),
         "controlMappings": mappings,
         "gapFindings": gaps,
@@ -945,7 +1128,7 @@ async def text_chat(session_id: str, body: dict):
 
     # Call Gemini with tool declarations (same schema as Live API)
     tool_config = types.Tool(
-        function_declarations=LIVE_CONFIG.tools[0].function_declarations  # type: ignore[index]
+        function_declarations=TOOL_DECLARATIONS
     )
     response = await genai_client.aio.models.generate_content(
         model=settings.gemini_model,
@@ -1016,6 +1199,69 @@ async def text_chat(session_id: str, body: dict):
             "speaker": "compass",
             "text": reply_text,
         })
+
+    # ── Sidecar tool orchestration ──────────────────────────────────────────
+    # COMPASS system prompt produces conversational responses; Gemini often
+    # reasons about classification without calling the tool.  Run a separate
+    # orchestrator call that FORCES a function call (mode=ANY) so assessment
+    # data is always written to Firestore after each user turn.
+    if len(user_message) >= 20:
+        try:
+            session_now = await firestore_service.get_session(session_id) or {}
+            tx_now = await firestore_service.get_transcript(session_id, limit=15)
+            convo_now = "\n".join(
+                f"{e.get('speaker', '').upper()}: {e.get('text', '')}"
+                for e in tx_now
+                if e.get("text")
+            )
+            cls_now = session_now.get("classification")
+            mappings_now = await firestore_service.get_control_mappings(session_id) or []
+            state_parts_now: list[str] = []
+            if cls_now:
+                state_parts_now.append(
+                    f"Already classified: {cls_now.get('fedramp_baseline', cls_now.get('level', ''))}"
+                )
+            if mappings_now:
+                state_parts_now.append(f"Controls mapped: {len(mappings_now)}")
+            state_str_now = "\n".join(state_parts_now) or "Nothing assessed yet."
+
+            allowed_now = _sidecar_allowed_tools(cls_now, len(mappings_now))
+
+            orch_prompt = (
+                "You are a compliance-assessment orchestrator.\n\n"
+                f"Current session state:\n{state_str_now}\n\n"
+                f"Recent conversation:\n{convo_now}\n\n"
+                f"Latest user message: {user_message}\n\n"
+                "You MUST call one of the available tools to advance the compliance assessment. "
+                "Choose the single most appropriate tool based on the conversation above."
+            )
+            orch_resp = await genai_client.aio.models.generate_content(
+                model=settings.gemini_model,
+                contents=orch_prompt,
+                config=types.GenerateContentConfig(
+                    tools=[types.Tool(function_declarations=TOOL_DECLARATIONS)],
+                    tool_config=types.ToolConfig(
+                        function_calling_config=types.FunctionCallingConfig(
+                            mode="ANY",
+                            allowed_function_names=allowed_now,
+                        )
+                    ),
+                ),
+            )
+            for cand in orch_resp.candidates or []:
+                for part in (cand.content.parts or []) if cand.content else []:
+                    if hasattr(part, "function_call") and part.function_call:
+                        fn = part.function_call.name
+                        fa = dict(part.function_call.args) if part.function_call.args else {}
+                        logger.info("Text-chat sidecar tool: %s(%s)", fn, list(fa.keys()))
+                        tool_result = await execute_tool(fn, fa, session_id)
+                        ev = tool_result.pop("_event", None)
+                        if ev:
+                            events.append(ev)
+                            if phase_key := _PHASE_MAP.get(ev.get("type", "")):
+                                events.append({"type": "phase_change", "phase": phase_key})
+        except Exception as orch_exc:
+            logger.error("Text-chat sidecar analysis failed: %s", orch_exc)
 
     return {"reply": reply_text, "events": events}
 

@@ -75,12 +75,14 @@ steps:
       - --min-instances=0
       - --max-instances=10
       - --concurrency=80
-      - --set-env-vars=GOOGLE_CLOUD_PROJECT=${PROJECT_ID},ENV=production
+      - --set-env-vars=GOOGLE_CLOUD_PROJECT=${PROJECT_ID},ENV=production,FIRESTORE_DATABASE=compass,GCS_BUCKET_OSCAL=compass-hackathon-oscal,GOOGLE_API_KEY=${_GOOGLE_API_KEY},GEMINI_USE_VERTEX=false,GEMINI_LIVE_MODEL=${_GEMINI_LIVE_MODEL}
       - --service-account=compass-backend@${PROJECT_ID}.iam.gserviceaccount.com
 
 substitutions:
   _LOCATION: us-central1
   _REPOSITORY: compass
+  _GEMINI_LIVE_MODEL: gemini-2.5-flash-native-audio-latest
+  _GOOGLE_API_KEY: ""  # Override at trigger time or via --substitutions
 
 images:
   - "${_LOCATION}-docker.pkg.dev/${PROJECT_ID}/${_REPOSITORY}/compass-backend:${SHORT_SHA}"

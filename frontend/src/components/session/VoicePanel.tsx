@@ -11,7 +11,7 @@ const PHASES: { key: Phase; label: string }[] = [
 const PHASE_ORDER: Phase[] = ["intake", "classification", "mapping", "gaps", "oscal"];
 
 const VoicePanel = () => {
-  const { phase, isConnected, isListening, startListening, stopListening } = useSession();
+  const { phase, isConnected, isListening, micError, startListening, stopListening, clearMicError } = useSession();
 
   const currentIdx = PHASE_ORDER.indexOf(phase);
 
@@ -34,6 +34,19 @@ const VoicePanel = () => {
       >
         {isListening ? "⏹" : "🎤"}
       </button>
+
+      {micError && (
+        <div className="absolute left-20 top-4 z-50 ml-2 w-64 rounded-md bg-destructive/90 px-3 py-2 text-xs text-destructive-foreground shadow-lg">
+          {micError}
+          <button
+            onClick={clearMicError}
+            className="ml-2 font-bold underline"
+            aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {isListening && (
         <div className="flex items-end gap-1 h-8">

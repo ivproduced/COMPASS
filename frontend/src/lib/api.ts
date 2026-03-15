@@ -14,15 +14,55 @@ export interface SessionSummary {
   status?: string;
 }
 
+export interface AssessmentClassification {
+  level: string;
+  confidentiality: string;
+  integrity: string;
+  availability: string;
+  control_count: number;
+  rationale?: string;
+}
+
+export interface AssessmentControl {
+  control_id: string;
+  control_title?: string;
+  control_family?: string;
+  implementation_status: string;
+  implementation_description?: string;
+}
+
+export interface AssessmentGap {
+  control_id: string;
+  gap_description: string;
+  risk_level: string;
+  remediation?: string;
+  estimated_effort?: string;
+}
+
+export interface AssessmentOscalDoc {
+  type: string;
+  gcs_path?: string;
+  createdAt?: string;
+}
+
+export interface AssessmentComplianceScore {
+  implemented: number;
+  partial: number;
+  planned: number;
+  not_addressed: number;
+  total_controls: number;
+  mapped_controls: number;
+}
+
 export interface AssessmentData {
   sessionId: string;
   systemProfile?: Record<string, unknown>;
-  classification?: Record<string, unknown>;
+  classification?: AssessmentClassification;
   conversationPhase?: string;
-  controlMappings?: unknown[];
-  gapFindings?: unknown[];
-  oscalOutputs?: unknown[];
-  complianceScore?: Record<string, unknown>;
+  controlMappings?: AssessmentControl[];
+  gapFindings?: AssessmentGap[];
+  oscalOutputs?: AssessmentOscalDoc[];
+  complianceScore?: AssessmentComplianceScore;
 }
 
 export interface TranscriptEntry {
@@ -82,7 +122,7 @@ export const api = {
 
   // Text chat (REST fallback — no audio required)
   chat: (sessionId: string, message: string) =>
-    request<{ response: string; tool_calls: unknown[] }>(
+    request<{ reply: string; events: Array<{ type: string; data: unknown }> }>(
       `/api/chat/${sessionId}`,
       { method: "POST", body: JSON.stringify({ message }) }
     ),

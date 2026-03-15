@@ -4,7 +4,6 @@ Loads all environment variables and provides typed config constants.
 """
 from __future__ import annotations
 
-import os
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -21,14 +20,14 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------
     # Google Cloud
     # -------------------------------------------------------------------
-    google_cloud_project: str = "compass-fedramp"
+    google_cloud_project: str = "gen-lang-client-0235375201"
     google_cloud_location: str = "us-central1"
 
     # -------------------------------------------------------------------
     # Gemini
     # -------------------------------------------------------------------
     gemini_model: str = "gemini-2.5-pro"
-    gemini_live_model: str = "gemini-2.0-flash-live-001"  # Stable Live API model
+    gemini_live_model: str = "gemini-2.5-flash-native-audio-latest"  # Live API model available for this API key
     gemini_voice: str = "Kore"
     google_api_key: str = ""              # Set for API-key mode (Developer API key)
     gemini_use_vertex: bool = False       # False → use Developer API key (Vertex Live API not yet GA)
@@ -41,7 +40,7 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------
     # Cloud Storage
     # -------------------------------------------------------------------
-    gcs_bucket_oscal: str = "compass-fedramp-oscal"
+    gcs_bucket_oscal: str = "compass-hackathon-oscal"
 
     # -------------------------------------------------------------------
     # Vertex AI Vector Search
@@ -67,7 +66,7 @@ class Settings(BaseSettings):
         "http://localhost:8081",
         "http://localhost:8082",
         "https://compass-fedramp.web.app",
-        "https://compass-backend-psmdy224na-uc.a.run.app",
+        "https://compass-backend-278165225404.us-central1.run.app",
     ]
 
     # -------------------------------------------------------------------

@@ -5,7 +5,6 @@ Conforms to NIST OSCAL 1.1.2.
 """
 from __future__ import annotations
 
-import json
 import logging
 import uuid
 from datetime import datetime, timezone

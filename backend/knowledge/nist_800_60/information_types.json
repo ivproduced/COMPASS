@@ -1,0 +1,1370 @@
+[
+  {
+    "id": "C.2.1.1",
+    "title": "Corrective Action",
+    "description": "Corrective Action involves the enforcement functions necessary to remedy programs that have been found non-compliant with a given law, regulation, or policy. The recommended security categorization for the corrective action information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.1.2",
+    "title": "Program Evaluation",
+    "description": "Program Evaluation involves the analysis of internal and external program effectiveness and the determination of corrective actions as appropriate. The impact levels should be commensurate with the impact levels of the program that is being evaluated. For example, if the program contains very sensit",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.1.3",
+    "title": "Program Monitoring",
+    "description": "Program Monitoring - Management and Support information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.2.1",
+    "title": "Policy and Guidance Development",
+    "description": "Policy and Guidance Development involves the creation and dissemination of guidelines to assist in the interpretation and implementation of regulations. In most cases, the effect on public welfare of a loss of policy and guidance development mission capability can be expected to be delayed rather th",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.2.2",
+    "title": "Public Comment Tracking",
+    "description": "Public Comment Tracking involves the activities of soliciting, maintaining, and responding to public comments regarding proposed regulations. Subject to exception conditions described below, the recommended security categorization for the public comment tracking information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.2.3",
+    "title": "Regulatory Creation",
+    "description": "Regulatory Creation involves the activities of researching and drafting proposed and final regulations. Subject to exception conditions described below, the recommended security categorization for the regulatory creation information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.2.4",
+    "title": "Rule Publication",
+    "description": "Rule Publication includes all activities associated with the publication of a proposed or final rule in the Federal Register and Code of Federal Regulations. Subject to exception conditions described below, the recommended security categorization for the rule publication information type is as follo",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.3.1",
+    "title": "Budget Formulation",
+    "description": "Budget Formulation involves all activities undertaken to determine priorities for future spending and to develop an itemized forecast of future funding and expenditures during a targeted period of time. This includes the collection and use of performance information to assess the effectiveness of pr",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.3.2",
+    "title": "Capital Planning",
+    "description": "Capital Planning involves the processes for ensuring that appropriate investments are selected for capital expenditures. The recommended provisional security categorization for capital planning information is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.3.3",
+    "title": "Enterprise Architecture",
+    "description": "Enterprise Architecture is an established process for describing the current state and defining the target state and transition strategy for an organization\u2019s people, processes, and technology. The recommended provisional security categorization for the enterprise architecture information type is as",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.3.4",
+    "title": "Strategic Planning",
+    "description": "Strategic Planning entails the determination of long-term goals and the identification of the best approach for achieving those goals. The recommended provisional security categorization for strategic planning information is as follows: 13 The Office of Management and Budget (OMB) has placed some em",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.3.5",
+    "title": "Budget Execution",
+    "description": "Budget Execution involves day-to-day requisitions and obligations for agency expenditures, invoices, billing dispute resolution, reconciliation, service level agreements, and distributions of shared expenses. The recommended provisional security categorization for budget execution information is as ",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.3.6",
+    "title": "Workforce Planning",
+    "description": "Workforce Planning involves the processes for identifying the workforce competencies required to meet the agency\u2019s strategic goals and for developing the strategies to meet these requirements. The recommended security categorization for workforce planning information is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.3.7",
+    "title": "Management Improvement",
+    "description": "Management Improvement includes all efforts to gauge the ongoing efficiency of business processes and identify opportunities for reengineering or restructuring. The recommended 22 provisional security categorization for the management improvement information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.3.8",
+    "title": "Budget and Performance Integration",
+    "description": "Budget and Performance Integration involves activities that align Federal resources allocated through budget formulation, execution, and management actions with examinations of program objectives, performance, and demonstrated results such as Program Performance Assessments, Government Performance R",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.3.9",
+    "title": "Tax and Fiscal Policy",
+    "description": "Tax and Fiscal Policy encompasses analysis of the implications for economic growth and stability in the United States and the world of Federal tax and spending policies. This includes assessing the sustainability of current programs and policies, the best means for raising revenues, the distribution",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.4.1",
+    "title": "Contingency Planning",
+    "description": "Contingency planning involves the actions required to plan for, respond to, and mitigate damaging events. The recommended provisional security categorization for the contingency planning information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.4.2",
+    "title": "Continuity of Operations",
+    "description": "Continuity of operations involves the activities associated with the identification of critical systems and processes, and the planning and preparation required to ensure that these systems and processes will be available in the event of a catastrophic event. The recommended provisional security cat",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.4.3",
+    "title": "Service Recovery",
+    "description": "Service recovery involves the internal actions necessary to develop a plan for resuming operations after a catastrophe occurs, such as a fire or earthquake. The recommended provisional security categorization for the service recovery information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.5.1",
+    "title": "Debt Collection",
+    "description": "Debt Collection supports activities associated with the collection of money owed to the United States government from both foreign and domestic sources. The recommended security categorization for debt collection information is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.5.2",
+    "title": "User Fee Collection",
+    "description": "User fee Collection involves the collection of fees assessed on individuals or organizations for the provision of Government services and for the use of Government goods or resources (i.e. National Parks). The recommended security categorization for the user fee collection information type is as fol",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.5.3",
+    "title": "Federal Asset Sales",
+    "description": "Federal Asset Sales encompasses the activities associated with the acquisition, oversight, tracking, and sale of non-internal assets managed by the Federal Government with a commercial value and sold to the private sector. The recommended security categorization for the Federal asset sales informati",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.6.1",
+    "title": "Customer Services",
+    "description": "Customer Service supports activities associated with providing and managing the delivery of information and support to the government\u2019s customers. The recommended security categorization for the customer service information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.6.2",
+    "title": "Official Information Dissemination",
+    "description": "Official Information Dissemination includes all efforts to provide official government information to external stakeholders through the use of various types of media, such as video, paper, web, etc. The recommended security categorization for the official information dissemination information type i",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.6.3",
+    "title": "Product Outreach",
+    "description": "Product Outreach relates to the marketing of government services products, and programs to the general public in an attempt to promote awareness and increase the number of customers/beneficiaries of those services and programs. The recommended security categorization for the product outreach informa",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.6.4",
+    "title": "Public Relations",
+    "description": "Public Relations activities involve the efforts to promote an organizations image through the effective handling of citizen concerns. The recommended security categorization for the public relations information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.7.1",
+    "title": "Legislation Tracking",
+    "description": "Legislation Tracking involves following legislation from conception to adoption. The recommended security categorization for the legislation tracking information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.7.2",
+    "title": "Legislation Testimony",
+    "description": "Legislation Testimony involves activities associated with providing testimony/evidence in support or, or opposition to, legislation from conception to adoption. Subject to exception conditions described below, the recommended security categorization for the legislation testimony information type is ",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.7.3",
+    "title": "Proposal Development",
+    "description": "Proposal Development involves drafting proposed legislation that creates or amends laws subject to Congressional legislative action. Subject to exception conditions described below, the recommended security categorization for the proposal development information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.7.4",
+    "title": "Congressional Liaison Operations",
+    "description": "Congressional Liaison Operations involves all activities associated with supporting the formal relationship between a Federal Agency and the U.S. Congress. Subject to exception conditions described below, the recommended security categorization for the Congressional liaison information type is as fo",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.1",
+    "title": "Central Fiscal Operations",
+    "description": "Central Fiscal Operations includes the fiscal operations that the Department of Treasury performs on behalf of the Government.14 [Note: Tax-related functions are associated with the Taxation Management information type.] Impacts to some information and information systems associated with central fis",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.2",
+    "title": "Legislative Functions",
+    "description": "Legislative functions include the service support activities associated with costs of the Legislative Branch other than the Tax Court, the Library of Congress, and the Government Printing Office revolving fund. The recommended security categorization for the legislative service support information t",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.3",
+    "title": "Executive Functions",
+    "description": "Subject to exception conditions described below, the recommended provisional security categorization for the executive information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.4",
+    "title": "Central Property Management",
+    "description": "Central Property Management involves most of the operations of the General Services Administration. The following recommended provisional security categorization of central property management information is particularly subject to change where critical infrastructure elements or key national assets",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.5",
+    "title": "Central Personnel Management",
+    "description": "Central Personnel Management involves most of the operating activities of the Office of Personnel Management and related agencies. The recommended security categorization for the central personnel management information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.6",
+    "title": "Taxation Management",
+    "description": "Taxation Management includes activities associated with the implementation of the Internal Revenue Code and the collection of taxes in the United States and abroad. The recommended security categorization for the taxation management information type is as follows:",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.7",
+    "title": "Central Records and Statistics Management",
+    "description": "Central Records and Statistics Management involves the operations surrounding the management of official documents, statistics, and records for the entire Federal Government. This information type is intended to include information and information systems associated with the management of records an",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.8",
+    "title": "Income Information",
+    "description": "Income information includes all the wages, self-employment earnings, savings data and other financial resources information that is needed to help determine the amount of Retirement, Survivor, or Disability benefits that individuals may be entitled to receive or not receive from the Supplementary Se",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.9",
+    "title": "Personal Identity and Authentication",
+    "description": "Personal identity and authentication information includes that information necessary to ensure that all persons who are potentially entitled to receive any federal benefit are enumerated and identified so that Federal agencies can have reasonable assurance that they are paying or communicating with ",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.10",
+    "title": "Entitlement Event",
+    "description": "Entitlement event information includes information about events such as death and date of occurrence, date of a disabling event and the relating data that can reasonably prove the severity of such disability, proof of age for retirement benefits, birth and relationship of spouse and/or children who ",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.11",
+    "title": "Representative Payee Information",
+    "description": "Representative payee information includes the information required to determine the need for representative payees and the data that is gathered to make the determination of who should serve as the representative payee for all beneficiaries of federal benefits who are unable to manage their own fund",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.2.8.12",
+    "title": "General Information",
+    "description": "An additional management and support sub-function information type has been defined to address General Information as a catch-all information type that may not be defined by the FEA BRM. As such, agencies may find it necessary to identify additional information types not defined in the BRM and assig",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.1.1",
+    "title": "Facilities, Fleet, and Equipment Management",
+    "description": "Facilities, Fleet, and Equipment management involves the maintenance, administration, certification, and operation of office buildings, fleets, machinery, and other capital assets considered as possessions of the Federal government. Impacts to some information and information systems associated with",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.1.2",
+    "title": "Help Desk Services",
+    "description": "Help Desk Services involves the management of a service center to respond to government employees' technical and administrative questions. Subject to exception conditions described below, the recommended provisional security categorization for the help desk service information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.1.3",
+    "title": "Security Management",
+    "description": "Security Management involves the physical protection of an organization\u2019s personnel, assets, and facilities (including security clearance management). Impacts to some information and information systems associated with security management may affect the security of some critical infrastructure eleme",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.1.4",
+    "title": "Travel",
+    "description": "Travel involves the activities associated with planning, preparing, and monitoring of business related travel for an organization\u2019s employees. The following security categorization is recommended for the travel information type: 63",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.1.5",
+    "title": "Workplace Policy Development and Management",
+    "description": "Assets and Liability Management provide accounting support for the management of assets and liabilities of the Federal government. Assets and liability management activities measure the total cost and revenue of Federal programs, and their various elements, activities and outputs. Assets and liabili",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.2.1",
+    "title": "Assets and Liability Management",
+    "description": "Assets and Liability Management - Management and Support information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.2.2",
+    "title": "Reporting and Information",
+    "description": "Reporting and Information includes providing financial information, reporting and analysis of financial transactions. Financial reporting includes the activities necessary to support: management\u2019s fiduciary role; budget formulation and execution functions; fiscal management of program delivery and p",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.2.3",
+    "title": "Funds Control",
+    "description": "Funds Control includes the management of the Federal budget process including the development of plans and programs, budgets, and performance outputs as well as financing Federal programs and operations through appropriation and apportionment of direct and reimbursable spending authority, fund trans",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.2.4",
+    "title": "Accounting",
+    "description": "Accounting entails accounting for assets, liabilities, fund balances, revenues and expenses associated with the maintenance of Federal funds and expenditure of Federal appropriations (Salaries and Expenses, Operation and Maintenance, Procurement, Working Capital, Trust Funds, etc.), in accordance wi",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.2.5",
+    "title": "Payments",
+    "description": "Payments include disbursements of Federal funds, via a variety of mechanisms, to Federal and private individuals, Federal agencies, state, local and international Governments, and the private sector, to effect payment for goods and services, or distribute entitlements, benefits, grants, subsidies, l",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.2.6",
+    "title": "Collections and Receivables",
+    "description": "Collections and Receivables include deposits, fund transfers, and receipts for sales or service. Receivable management supports activities associated with recognizing and recording debts due to the Government, performing follow-up actions to collect on these debts, and recording cash receipts. The r",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.2.7",
+    "title": "Cost Accounting/Performance Measurement",
+    "description": "Cost Accounting / Performance Measurement is the process of accumulating, measuring, analyzing, interpreting, and reporting cost information useful to both internal and external groups concerned with the way in which an organization uses, accounts for, safeguards, and controls its resources to meet ",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.3.1",
+    "title": "HR Strategy",
+    "description": "HR Strategy develops effective human capital management strategies to ensure federal organizations are able to recruit, select, develop, train, and manage a high-quality, productive workforce in accordance with merit system principles. This sub-function includes: conducting both internal and externa",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.3.2",
+    "title": "Staff Acquisition",
+    "description": "Staff Acquisition establishes procedures for recruiting and selecting high-quality, productive employees with the right skills and competencies, in accordance with merit system principles. This sub-function includes: developing a staffing strategy and plan; establishing an applicant evaluation appro",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.3.3",
+    "title": "Organization & Position Management",
+    "description": "Organization and Position Management designs, develops, and implements organizational and position structures that create a high-performance, competency-driven framework that both advances the agency mission and serves agency human capital needs. The recommended provisional security categorization f",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.3.4",
+    "title": "Compensation Management",
+    "description": "Compensation Management designs, develops, and implements compensation programs that attract, retain and fairly compensate agency employees. In addition, designs, develops, and implements pay for performance compensation programs to recognize and reward high performance, with both base pay increases",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.3.5",
+    "title": "Benefits Management",
+    "description": "Benefits Management designs, develops, and implements benefit programs that attract, retain and support current and former agency employees. This sub-function includes: establishing and communicating benefits programs; processing benefits actions; and interacting as necessary with third party benefi",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.3.6",
+    "title": "Employee Performance Management",
+    "description": "Employee Performance Management designs, develops, and implements a comprehensive performance management approach to ensure agency employees are demonstrating competencies required of their work assignments. Design, develop and implement a comprehensive 79 performance management strategy that enable",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.3.7",
+    "title": "Employee Relations",
+    "description": "Employee Relations designs, develops, and implements programs that strive to maintain an effective employer-employee relationship that balance the agency\u2019s needs against its employees\u2019 rights. This sub-function includes: addressing employee misconduct; addressing employee performance problems; manag",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.3.8",
+    "title": "Labor Relations",
+    "description": "Labor Relations manages the relationship between the agency and its unions and bargaining units. This includes negotiating and administering labor contracts and collective bargaining agreements; managing negotiated grievances; and participating in negotiated third party proceedings. The recommended ",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.3.9",
+    "title": "Separation Management",
+    "description": "Separation Management conducts efficient and effective employee separation programs that assist employees in transitioning to non-Federal employment; facilitates the removal of unproductive, non-performing employees; and assists employees in transitioning to retirement. The recommended provisional s",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.3.10",
+    "title": "Human Resources Development",
+    "description": "Human Resources Development designs, develops, and implements a comprehensive employee development approach to ensure that agency employees have the right competencies and skills for current and future work assignments. This sub-function includes conducting employee development needs assessments; de",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.4.1",
+    "title": "Goods Acquisition",
+    "description": "Goods acquisition involves the procurement of physical goods, products, and capital assets to be used by the Federal government. The recommended security categorization for the goods acquisition information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.4.2",
+    "title": "Inventory Control",
+    "description": "Inventory control refers to the tracking of information related to procured assets and resources with regards to quantity, quality, and location. The recommended security categorization for the inventory control information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.4.3",
+    "title": "Logistics Management",
+    "description": "Logistics management involves the planning and tracking of personnel and their resources in relation to their availability and location. The recommended security categorization for the logistics management information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.4.4",
+    "title": "Services Acquisition",
+    "description": "Services acquisition involves the oversight and/or management of contractors and service providers from the private sector. The recommended security categorization for the services acquisition information type is as follows: 89",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.5.1",
+    "title": "System Development",
+    "description": "System Development supports all activities associated with the in-house design and development of software applications. The recommended security categorization for the system development information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.5.2",
+    "title": "Lifecycle/Change Management",
+    "description": "Lifecycle/Change Management involves the processes that facilitate a smooth evolution, composition, and workforce transition of the design and implementation of changes to agency resources such as assets, methodologies, systems, or procedures. The recommended security categorization for the lifecycl",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.5.3",
+    "title": "System Maintenance",
+    "description": "System Maintenance supports all activities associated with the maintenance of in-house designed software applications. The recommended security categorization for the system maintenance information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.5.4",
+    "title": "IT Infrastructure Maintenance",
+    "description": "IT infrastructure maintenance involves the planning, design, implementation, and maintenance of an IT Infrastructure to effectively support automated needs (i.e. operating systems, applications software, platforms, networks, servers, printers, etc.). IT infrastructure maintenance also includes infor",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.5.5",
+    "title": "Information Security",
+    "description": "IT Security involves all functions pertaining to the securing of Federal data and systems through the creation and definition of security policies, procedures and controls covering such services as identification, authentication, and non-repudiation. The recommended security categorization for the I",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.5.6",
+    "title": "Record Retention",
+    "description": "Records Retention involves the operations surrounding the management of the official documents and records for an agency. Subject to exception conditions described below, the recommended security categorization for the record retention information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.5.7",
+    "title": "Information Management",
+    "description": "Information Management involves the coordination of information collection, storage, and dissemination, and destruction as well as managing the policies, guidelines, and standards regarding information management. Subject to exception conditions described below, the recommended security categorizati",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.5.8",
+    "title": "System and Network Monitoring",
+    "description": "System and Network Monitoring supports all activities related to the real-time monitoring of systems and networks for optimal performance. System and network monitoring describes the use of tools and observation to determine the performance and status of information systems and is closely tied to ot",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "C.3.5.9",
+    "title": "Information Sharing",
+    "description": "The BRM provided in the FEA Consolidated Reference Model Document, Version 2.3, October 2007 specifies Information Sharing as relating to any method or function, for a given business area, facilitating: data being received in a usable medium by one or more departments or agencies as provided by a se",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.1",
+    "title": "Defense and National Security",
+    "description": "Border and Transportation Security includes facilitating or deterring entry and exit of people, goods, and conveyances at and between U.S. ports of entry, as well as ensuring the security of transportation and infrastructure networks, facilities, vehicles, and personnel within the United States. Bor",
+    "confidentiality": "high",
+    "integrity": "high",
+    "availability": "high"
+  },
+  {
+    "id": "D.2.1",
+    "title": "Border and Transportation Security",
+    "description": "Border and Transportation Security - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.2.2",
+    "title": "Key Asset and Critical Infrastructure Protection",
+    "description": "Key Asset and Critical Infrastructure Protection involves assessing key asset and critical infrastructure vulnerabilities and taking direct action to mitigate vulnerabilities, enhance security, and ensure continuity and necessary redundancy in government operations and personnel. The Critical Infras",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.2.3",
+    "title": "Catastrophic Defense",
+    "description": "Catastrophic Defense involves the development of technological countermeasures (chemical, biological, radiological and nuclear [CBRN]) to terrorist threats, conducting laboratory testing on new and promising devices, and conducting basic and applied science that can lead to the development of counte",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "high"
+  },
+  {
+    "id": "D.2.4",
+    "title": "Executive Functions (EOP)",
+    "description": "Executive Functions involve the Executive Office of the President (EOP). Subject to exception conditions described below, the recommended provisional security categorization for the executive information type is as follows: 112",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.3",
+    "title": "Intelligence Operations",
+    "description": "Disaster monitoring and prediction involves the actions taken to predict when and where a disaster may take place and communicate that information to affected parties. [Some disaster management information occurs in humanitarian aid systems under the International Affairs and Commerce line of busine",
+    "confidentiality": "high",
+    "integrity": "high",
+    "availability": "high"
+  },
+  {
+    "id": "D.4.1",
+    "title": "Disaster Monitoring and Prediction",
+    "description": "Disaster Monitoring and Prediction - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.4.2",
+    "title": "Disaster Preparedness and Planning",
+    "description": "Disaster preparedness and planning involves the development of response programs to be used in case of a disaster. This involves the development of emergency management programs and activities as well as staffing and equipping regional response centers. The recommended provisional categorization of ",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.4.3",
+    "title": "Disaster Repair and Restoration",
+    "description": "Disaster repair and restoration involves the cleanup and restoration activities that take place after a disaster. This involves the cleanup and rebuilding of any homes, buildings, roads, environmental resources, or infrastructure that may be damaged due to a disaster. The recommended provisional cat",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.4.4",
+    "title": "Emergency Response",
+    "description": "Emergency Response involves the immediate actions taken to respond to a disaster (e.g., wildfire management). These actions include providing mobile telecommunications, operational support, power generation, search and rescue, and medical life saving actions. Impacts to emergency response informatio",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "high"
+  },
+  {
+    "id": "D.5.1",
+    "title": "Foreign Affairs",
+    "description": "Foreign Affairs - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.5.2",
+    "title": "International Development and Humanitarian Aid",
+    "description": "International Development and Humanitarian Aid refers to those activities related to the implementation of development and humanitarian assistance programs to developing and transitioning countries throughout the world. Development and aid may include technical assistance (the transfer of knowledge ",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.5.3",
+    "title": "Global Trade",
+    "description": "Global Trade refers to those activities the Federal Government undertakes to advance worldwide economic prosperity by increasing trade through the opening of overseas markets and freeing the flow of goods, services, and capital. Trade encompasses all activities associated with the importing and expo",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.6.1",
+    "title": "Water Resource Management",
+    "description": "Water Resource Management - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.6.2",
+    "title": "Conservation, Marine and Land Management",
+    "description": "Conservation, Marine and Land Management involves the responsibilities of surveying, maintaining, and operating public lands and monuments, as well as activities devoted to ensuring the preservation of land, water, wildlife, and natural resources, both domestically and internationally. It also inclu",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.6.3",
+    "title": "Recreational Resource Management and Tourism",
+    "description": "Recreational Resource Management and Tourism involves the management of national parks, monuments, and tourist attractions as well as visitor centers, campsites, and park service facilities. Impacts to some information and information systems associated with tourism management may affect the securit",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.6.4",
+    "title": "Agricultural Innovation and Services",
+    "description": "Agricultural Innovation and Services involves the creation and dissemination of better methods for farming and the development of better and healthier crops. The recommended security categorization for the agricultural innovation and service information type is as follows: 131",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.7.1",
+    "title": "Energy Supply",
+    "description": "Energy Supply - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.7.2",
+    "title": "Energy Conservation and Preparedness",
+    "description": "Energy Conservation and Preparedness involves protection of energy resources from overconsumption to ensure the continued availability of fuel resources and to promote environmental protection. This mission also includes measures taken to ensure the provision of energy in the event of an emergency. ",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.7.3",
+    "title": "Energy Resource Management",
+    "description": "Energy resource management involves the management of energy producing resources including facilities, land, and offshore resources. The recommended provisional categorization of the energy resource management information type follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.7.4",
+    "title": "Energy Production",
+    "description": "Energy production involves the transformation of raw energy resources into useable, deliverable energy. Impacts to some information and information systems associated with energy production may affect the security of the critical energy infrastructure. The recommended provisional categorization of t",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.8.1",
+    "title": "Environmental Monitoring and Forecasting",
+    "description": "Environmental Monitoring and Forecasting - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.8.2",
+    "title": "Environmental Remediation",
+    "description": "Environmental remediation supports the immediate and long-term activities associated with the correcting and offsetting of environmental deficiencies or imbalances, including restoration activities. The following security categorization is recommended for the environmental remediation information ty",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.8.3",
+    "title": "Pollution Prevention and Control",
+    "description": "Pollution prevention and control includes activities associated with the establishment of environmental standards to control the levels of harmful substances emitted into the soil, water and atmosphere. The following security categorization is recommended for the pollution prevention and control inf",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.9.1",
+    "title": "Business and Industry Development",
+    "description": "Business and Industry Development - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.9.2",
+    "title": "Intellectual Property Protection",
+    "description": "Intellectual property protection involves law enforcement activities involving the enforcement of intellectual property including inventions, literary and artistic works, and symbols, names, images, and designs used in commerce. Note that intellectual property protection is an exception to the often",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.9.3",
+    "title": "Financial Sector Oversight",
+    "description": "Financial Sector Oversight involves the regulation of private sector firms and markets (stock exchanges, corporations, etc.) to protect investors from fraud, monopolies, and illegal behavior. This also includes deposit protection. The recommended provisional categorization of the financial sector ov",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.9.4",
+    "title": "Industry Sector Income Stabilization",
+    "description": "Industry Sector Income Stabilization involves all programs and activities devoted to assisting adversely impacted industrial sectors (farming, commercial transportation, etc.) to ensure the continued availability of their services for the American public and the long-term economic stability of these",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.10.1",
+    "title": "Homeownership Promotion",
+    "description": "Homeownership Promotion - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.10.2",
+    "title": "Community and Regional Development",
+    "description": "The Community and Regional Development mission involves activities designed to assist communities in preventing and eliminating blight and deterioration, assist economically distressed communities, and encourage and foster economic development through improved public facilities and resources. The re",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.10.3",
+    "title": "Social Services",
+    "description": "Social Services are designed to provide meaningful opportunities for social and economic growth of the disadvantaged sector of the population in order to develop individuals into productive and self-reliant citizens and promote social equity. Included in this category are social welfare services ext",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.10.4",
+    "title": "Postal Services",
+    "description": "Postal Services provide for the timely and consistent exchange and delivery of mail and packages between businesses, organizations, and residents of the United States or between businesses, organizations, and residents of the United States and the rest of the world. It also includes the nation-wide ",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.11.1",
+    "title": "Ground Transportation",
+    "description": "Ground Transportation - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.11.2",
+    "title": "Water Transportation",
+    "description": "Water Transportation involves the activities related to ensuring the availability of transit and the safe passage of passengers and goods over sea and water. Note: The protection of maritime transportation from deliberate attack is included in the Transportation Security information type under the H",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.11.3",
+    "title": "Air Transportation",
+    "description": "Air Transportation involves the activities related to the safe passage of passengers or goods through the air. It also includes command and control activities related to the safe movement of aircraft through all phases of flight for commercial and military operations. Note: The protection of air tra",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "high"
+  },
+  {
+    "id": "D.11.4",
+    "title": "Space Operations",
+    "description": "Space Operations involves the activities related to the safe launches/missions of passengers or goods into aerospace and includes commercial, scientific, and military operations. The recommended provisional security categorization for the space operations information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.12.1",
+    "title": "Elementary, Secondary, and Vocational Education",
+    "description": "Elementary, Secondary, and Vocational Education - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.12.2",
+    "title": "Higher Education",
+    "description": "Higher Education refers to education beyond the secondary level; specifically, education provided by a college or university. It includes external higher educational activities performed by the government (e.g., Military Academies, ROTC, and USDA Graduate School). The recommended provisional categor",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.12.3",
+    "title": "Cultural and Historic Preservation",
+    "description": "Cultural and Historic Preservation involves all activities performed by the Federal Government to collect and preserve information and artifacts important to the culture and history of the United States and its citizenry and the education of U.S. citizens and the world. The recommended provisional c",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.12.4",
+    "title": "Cultural and Historic Exhibition",
+    "description": "Cultural and Historic Exhibition includes all activities undertaken by the U.S. government to promote education through the exhibition of cultural, historical, and other information, archives, art, etc. The recommended provisional categorization of the cultural and historic exhibition information ty",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.13.1",
+    "title": "Training and Employment",
+    "description": "Training and Employment - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.13.2",
+    "title": "Labor Rights Management",
+    "description": "Labor Rights Management refers to those activities undertaken to ensure that employees and employers are aware of and comply with all statutes and regulations concerning labor rights, including those pertaining to wages, benefits, safety and health, whistleblower, and nondiscrimination policies. The",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.13.3",
+    "title": "Worker Safety",
+    "description": "Worker Safety refers to those activities undertaken to save lives, prevent injuries, and protect the health of America's workers. The recommended provisional categorization of the worker safety information type follows:",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.14.1",
+    "title": "Access to Care",
+    "description": "Access to Care - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.14.2",
+    "title": "Population Health Management and Consumer Safety",
+    "description": "Population Health Management and Consumer Safety assesses health indicators and consumer products as a means to protect and promote the health of the general population. This includes monitoring of health, health planning, and health management of humans, animals, animal products, and plants, as wel",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.14.3",
+    "title": "Health Care Administration",
+    "description": "Health Care Administration assures that federal health care resources are expended effectively to ensure quality, safety, and efficiency. This includes managing health care quality, cost, workload, utilization, and fraud/abuse efforts.",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.14.4",
+    "title": "Health Care Delivery Services",
+    "description": "Health Care Delivery Services provides and supports the delivery of health care to its beneficiaries. This includes assessing health status; planning health services; ensuring quality of services and continuity of care; and managing clinical information and documentation. The recommended provisional",
+    "confidentiality": "high",
+    "integrity": "high",
+    "availability": "high"
+  },
+  {
+    "id": "D.14.5",
+    "title": "Health Care Research and Practitioner Education",
+    "description": "Health Care Research and Practitioner Education fosters advancement in health discovery and knowledge. This includes developing new strategies to handle diseases; promoting health knowledge advancement; identifying new means for delivery of services, methods, decision models and practices; making st",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.15.1",
+    "title": "General Retirement and Disability",
+    "description": "General Retirement and Disability - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.15.2",
+    "title": "Unemployment Compensation",
+    "description": "Unemployment Compensation provides income security to those who are no longer employed, while they seek new employment. The recommended provisional categorization of the unemployment compensation information type follows:",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.15.3",
+    "title": "Housing Assistance",
+    "description": "Housing Assistance involves the development and management programs that provide housing to those who are unable to provide housing for themselves including the rental of single-family or multifamily properties, and the management and operation of federally supported housing properties. The recommen",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.15.4",
+    "title": "Food and Nutrition Assistance",
+    "description": "Food and Nutrition Assistance involves the development and management of programs that provide food and nutrition assistance to those members of the public who are unable to provide for these needs themselves. The recommended provisional categorization of the food and nutrition assistance informatio",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.15.5",
+    "title": "Survivor Compensation",
+    "description": "Survivor Compensation provides compensation to the survivors of individuals currently receiving or eligible to receive benefits from the Federal Government. This includes survivors such as spouses or children of veterans or wage earners eligible for social security payments. The recommended provisio",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.16.1",
+    "title": "Criminal Apprehension",
+    "description": "Criminal Apprehension - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.16.2",
+    "title": "Criminal Investigation and Surveillance",
+    "description": "Criminal investigation and surveillance includes the collection of evidence required to determine responsibility for a crime and the monitoring and questioning of affected parties. The recommended provisional categorization of the criminal investigation and surveillance information type follows:",
+    "confidentiality": "high",
+    "integrity": "high",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.16.3",
+    "title": "Citizen Protection",
+    "description": "Citizen protection involves all activities performed to protect the general population of the United States from criminal activity. The following security categorization is recommended for the citizen protection information type:",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.16.4",
+    "title": "Leadership Protection",
+    "description": "Leadership protection involves all activities performed to protect the health and well being of the president, vice-president, their families, and other high-level government officials. Some leadership protection information may be classified. All classified information is treated under separate rul",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "high"
+  },
+  {
+    "id": "D.16.5",
+    "title": "Property Protection",
+    "description": "Property protection entails all activities performed to ensure the security of civilian and government property. The recommended provisional categorization of the property protection information type follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.16.6",
+    "title": "Substance Control",
+    "description": "Substance control supports activities associated with the enforcement of legal substances (i.e., alcohol and tobacco) and illegal narcotics laws including trafficking, possession, sale, distribution, and other related activities. The provisional security categorization recommended for the substance ",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.16.7",
+    "title": "Crime Prevention",
+    "description": "Crime prevention entails all efforts designed to create safer communities through the control and reduction of crime by addressing the causes of crime and reducing the opportunities of crime. The recommended provisional security categorization for the crime prevention information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.16.8",
+    "title": "Trade Law Enforcement",
+    "description": "Trade law enforcement refers to the enforcement of anti-boycott, international loan, and general trade laws. The security categorization recommended for the trade law enforcement information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.17.1",
+    "title": "Judicial Hearings",
+    "description": "Judicial Hearings - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.17.2",
+    "title": "Legal Defense",
+    "description": "Legal defense refers to the representation of a defendant in a criminal/civil court of law in an attempt to provide constitutional guarantees to legal representation. The sensitivity of much legal information is highly lifecycle-dependent. From a confidentiality perspective, most information associa",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.17.3",
+    "title": "Legal Investigation",
+    "description": "Legal investigation supports activities associated with gathering information about a given party (government agency, citizen, corporation) that would be admissible in a court of law, in an attempt to prove guilt or innocence. The recommended provisional categorization of the legal investigation inf",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.17.4",
+    "title": "Legal Prosecution and Litigation",
+    "description": "Legal prosecution/litigation includes all activities involved with presenting a case in a legal proceeding both in a criminal or civil court of law in an attempt to prove guilt/responsibility. The recommended provisional security categorization for the legal prosecution/litigation information type i",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.17.5",
+    "title": "Resolution Facilitation",
+    "description": "Resolution facilitation involves all activities outside of a court of law that may be used in an attempt to settle a dispute between two or more parties (government, citizen, corporation). The general recommended security categorization for the resolution facilitation information type is as follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.18.1",
+    "title": "Criminal Incarceration",
+    "description": "Criminal Incarceration - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.18.2",
+    "title": "Criminal Rehabilitation",
+    "description": "Criminal Rehabilitation includes all government activities devoted to providing convicted criminals with the educational resources and life skills necessary to rejoin society as responsible and contributing members. The recommended provisional categorization of the criminal rehabilitation informatio",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.19.1",
+    "title": "Scientific and Technological Research and Innovation",
+    "description": "Scientific and Technological Research and Innovation - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.19.2",
+    "title": "Space Exploration and Innovation",
+    "description": "Space Exploration and Innovation includes all activities devoted to innovations directed at human and robotic space flight and the development and operation of space launch and transportation systems, and the general research and exploration of outer space. While some space exploration and innovatio",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.20.1",
+    "title": "Research and Development",
+    "description": "Research and Development - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "moderate",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.20.2",
+    "title": "General Purpose Data and Statistics",
+    "description": "General purpose data and statistics includes activities performed in providing empirical, numerical, and related data and information pertaining to the current state of the nation in areas such as the economy, labor, weather, international trade, etc. The recommended provisional categorization of th",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.20.3",
+    "title": "Advising and Consulting",
+    "description": "Advising and Consulting activities involve the guidance and consultative services provided by the Federal Government to support the implementation of a specific service provided to citizens. The recommended provisional categorization of the advising and consulting information type follows:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.20.4",
+    "title": "Knowledge Dissemination",
+    "description": "Knowledge Dissemination addresses those instances where the primary method used in delivering a service is through the publishing or broadcasting of information, such as the Voice of America or web-based museums maintained by the Smithsonian. Knowledge Dissemination is not intended to address circum",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.21.1",
+    "title": "Inspections and Auditing",
+    "description": "Inspections and Auditing - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.21.2",
+    "title": "Standards Setting/Reporting Guideline Development",
+    "description": "Standard Setting/Reporting Guideline Development involves the establishment of allowable limits associated with a regulated activity and the development of reporting requirements necessary to monitor and control compliance with allowable limits. This includes the development of requirements for prod",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.21.3",
+    "title": "Permits and Licensing",
+    "description": "Permits and Licensing involves activities associated with granting, revoking, and the overall management of the documented authority necessary to perform a regulated task or function. The following security categorization is recommended for the permits and licensing information type:",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.22.1",
+    "title": "Manufacturing",
+    "description": "Manufacturing - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.22.2",
+    "title": "Construction",
+    "description": "Construction involves all programs and activities in which the Federal Government builds or constructs facilities, roads, dams, etc. The following security categorization is recommended for the construction information type:",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  },
+  {
+    "id": "D.22.3",
+    "title": "Public Resources, Facility and Infrastructure Management",
+    "description": "Public Resources, Facility and Infrastructure Management involves the management and maintenance of government-owned capital goods and resources (natural or otherwise) on behalf of the public, usually with benefits to the community at large as well as to the direct user. Examples of facilities and i",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.22.4",
+    "title": "Information Infrastructure Management",
+    "description": "Information Infrastructure Management involves the management and stewardship of a type of information by the Federal Government and/or the creation of physical communication infrastructures on behalf of the public in order to facilitate communication. This includes the 215 management of large amoun",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "moderate"
+  },
+  {
+    "id": "D.23.1",
+    "title": "Federal Grants (Non-State)",
+    "description": "Federal Grants (Non-State) - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.23.2",
+    "title": "Direct Transfers to Individuals",
+    "description": "Direct Transfers to Individuals involves the disbursement of funds from the Federal Government directly to beneficiaries (individuals or organizations) who satisfy Federal eligibility requirements with no restrictions imposed on the recipient as to how the money is spent. Direct Transfers include bo",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.23.3",
+    "title": "Subsidies",
+    "description": "Subsidies involve Federal Government financial transfers that reduce costs and/or increase revenues of producers. Subsidies include the payment of funds from the government to affect the production or prices of various goods to benefit the public. The recommended provisional security categorization ",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.23.4",
+    "title": "Tax Credits",
+    "description": "Tax Credits allow a special exclusion, exemption, or deduction from gross income or which provide a special credit, a preferential rate of tax, or a deferral of tax liability designed to encourage certain kinds of activities or to aid taxpayers in special circumstances. The recommended provisional s",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.24.1",
+    "title": "Direct Loans",
+    "description": "Direct Loans - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.24.2",
+    "title": "Loan Guarantees",
+    "description": "Loan guarantees involve any guarantee, insurance, or other pledge with respect to the payment of all or a part of the principal or interest on any debt obligation of a non-Federal borrower to a non-Federal lender, but does not include the insurance of deposits, shares, or other withdrawable accounts",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.24.3",
+    "title": "General Insurance",
+    "description": "General Insurance involves providing protection to individuals or entities against specified risks. The specified protection generally involves risks that private sector entities are unable or unwilling to assume or subsidize and where the provision of insurance is necessary to achieve social object",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.25.1",
+    "title": "Formula Grants",
+    "description": "Formula Grants - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.25.2",
+    "title": "Project/Competitive Grants",
+    "description": "Project/Competitive Grants involves the funding, for fixed or known periods, of projects. Project/Competitive grants can include fellowships, scholarships, research grants, training grants, traineeships, experimental and demonstration grants, evaluation grants, planning grants, technical assistance ",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.25.3",
+    "title": "Earmarked Grants",
+    "description": "Earmarked Grants involves the distribution of money to State and Local Governments for a named purpose or service usually specifically noted by Congress in appropriations language, or other program authorizing language. The recommended provisional security categorization for the earmarked grants inf",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.25.4",
+    "title": "State Loans",
+    "description": "State Loans involve all disbursement of funds by the Government to a State or Local Government (or Indian Tribe) entity under a contract that requires the repayment of such funds with or without interest. The recommended provisional security categorization for the state loan information type is as f",
+    "confidentiality": "low",
+    "integrity": "moderate",
+    "availability": "low"
+  },
+  {
+    "id": "D.26.1",
+    "title": "Military Operations",
+    "description": "Military Operations - Mission-based information type from NIST SP 800-60",
+    "confidentiality": "high",
+    "integrity": "high",
+    "availability": "high"
+  },
+  {
+    "id": "D.26.2",
+    "title": "Civilian Operations",
+    "description": "Civilian Operations describes the direct provision of a non-military service for the citizen by government employees. The BRM provided in the FEA Consolidated Reference Model Document, Version 2.3, October 2007 specifies Civilian Operations as a Mode of Delivery business area or a vehicle by which t",
+    "confidentiality": "low",
+    "integrity": "low",
+    "availability": "low"
+  }
+]

@@ -1,0 +1,19 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build COMPASS backend",
+			"type": "shell",
+			"command": "gcloud",
+			"args": [
+				"builds",
+				"submit",
+				"--tag",
+				"gcr.io/compass-fedramp/compass-backend:latest",
+				"--project",
+				"compass-fedramp"
+			],
+			"isBackground": false
+		}
+	]
+}

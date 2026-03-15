@@ -11,39 +11,39 @@ class TestFIPS199Classifier:
     def test_pii_maps_to_moderate(self):
         """PII alone should yield Moderate baseline."""
         result = classify_system_impl(data_types=["PII"])
-        assert result["overall_impact"] == "Moderate"
-        assert result["fedramp_baseline"] == "Moderate"
+        assert result["fips_199_classification"]["overall"] == "moderate"
+        assert result["fedramp_baseline"] == "FedRAMP Moderate"
         assert result["control_count"] == 325
 
     def test_phi_maps_to_high(self):
         """PHI should trigger High."""
         result = classify_system_impl(data_types=["PHI"])
-        assert result["overall_impact"] == "High"
-        assert result["fedramp_baseline"] == "High"
+        assert result["fips_199_classification"]["overall"] == "high"
+        assert result["fedramp_baseline"] == "FedRAMP High"
         assert result["control_count"] == 421
 
     def test_public_maps_to_low(self):
         """PUBLIC data should yield Low."""
         result = classify_system_impl(data_types=["PUBLIC"])
-        assert result["overall_impact"] == "Low"
-        assert result["fedramp_baseline"] == "Low"
+        assert result["fips_199_classification"]["overall"] == "low"
+        assert result["fedramp_baseline"] == "FedRAMP Low"
         assert result["control_count"] == 156
 
     def test_high_watermark_with_mixed_types(self):
         """Mix of PII and FTI — high-water-mark should be High."""
         result = classify_system_impl(data_types=["PII", "FTI"])
-        assert result["overall_impact"] == "High"
-        assert result["availability_impact"] in ["Moderate", "High"]
+        assert result["fips_199_classification"]["overall"] == "high"
+        assert result["fips_199_classification"]["availability"] in ["moderate", "high"]
 
     def test_auth_credentials_impact(self):
         """AUTH_CREDENTIALS drives High confidentiality."""
         result = classify_system_impl(data_types=["AUTH_CREDENTIALS"])
-        assert result["confidentiality_impact"] == "High"
+        assert result["fips_199_classification"]["confidentiality"] == "high"
 
     def test_empty_data_types_defaults_to_moderate(self):
         """Unknown/empty data types should fall back gracefully."""
         result = classify_system_impl(data_types=["UNKNOWN_TYPE"])
-        assert result["overall_impact"] in ["Low", "Moderate", "High"]
+        assert result["fips_199_classification"]["overall"] in ["low", "moderate", "high"]
         assert "fedramp_baseline" in result
 
     def test_rationale_populated(self):
@@ -52,18 +52,18 @@ class TestFIPS199Classifier:
         assert result.get("rationale")
 
     def test_classification_keys(self):
-        """Response must include all required keys."""
+        """Response must include all required top-level keys."""
         result = classify_system_impl(data_types=["PII"])
         required_keys = {
-            "confidentiality_impact",
-            "integrity_impact",
-            "availability_impact",
-            "overall_impact",
+            "fips_199_classification",
             "fedramp_baseline",
             "control_count",
             "rationale",
         }
         assert required_keys.issubset(result.keys())
+        # Nested impact keys
+        cia = result["fips_199_classification"]
+        assert {"confidentiality", "integrity", "availability", "overall"}.issubset(cia.keys())
 
 
 class TestDataTypeMapper:
@@ -74,10 +74,10 @@ class TestDataTypeMapper:
         assert any("PII_SSN" in tag or "PII" in tag for tag in result.get("canonical_tags", []))
 
     def test_medical_alias(self):
-        """'medical records' should map to PHI."""
+        """'medical records' should map to PHI_CLINICAL (specific clinical subtype)."""
         result = map_data_types_impl(descriptions=["medical records"])
         tags = result.get("canonical_tags", [])
-        assert "PHI" in tags
+        assert "PHI_CLINICAL" in tags
 
     def test_password_alias(self):
         """'passwords' should map to AUTH_CREDENTIALS."""

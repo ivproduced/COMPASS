@@ -6,7 +6,6 @@ Uses the oscal-pydantic library when available; falls back to structural heurist
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from google.adk.tools import FunctionTool
 

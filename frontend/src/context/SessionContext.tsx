@@ -98,6 +98,7 @@ type Action =
   | { type: "SET_LISTENING"; value: boolean }
   | { type: "SET_PHASE"; phase: Phase }
   | { type: "ADD_TRANSCRIPT"; entry: TranscriptEntry }
+  | { type: "UPDATE_LAST_TRANSCRIPT"; speaker: "user" | "compass"; text: string }
   | { type: "SET_TRANSCRIPT"; entries: TranscriptEntry[] }
   | { type: "SET_CLASSIFICATION"; data: Classification }
   | { type: "SET_PROFILE"; data: SystemProfile }
@@ -136,6 +137,21 @@ function reducer(state: SessionState, action: Action): SessionState {
       return { ...state, phase: action.phase };
     case "ADD_TRANSCRIPT":
       return { ...state, transcript: [...state.transcript, action.entry] };
+    case "UPDATE_LAST_TRANSCRIPT": {
+      const t = state.transcript;
+      if (t.length > 0 && t[t.length - 1].speaker === action.speaker) {
+        const updated = [...t];
+        updated[updated.length - 1] = { ...updated[updated.length - 1], text: updated[updated.length - 1].text + action.text };
+        return { ...state, transcript: updated };
+      }
+      return {
+        ...state,
+        transcript: [
+          ...t,
+          { speaker: action.speaker, text: action.text, timestamp: new Date().toISOString() },
+        ],
+      };
+    }
     case "SET_TRANSCRIPT":
       return { ...state, transcript: action.entries };
     case "SET_CLASSIFICATION":
@@ -238,6 +254,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const nextPlayTimeRef = useRef<number>(0);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectDelayRef = useRef<number>(2000);
+  const reconnectAttemptsRef = useRef<number>(0);
 
   // Keep state in ref so callbacks can access current values without stale closure
   const stateRef = useRef(state);
@@ -298,16 +315,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           }
           break;
 
-        case "transcript":
-          dispatch({
-            type: "ADD_TRANSCRIPT",
-            entry: {
-              speaker: msg.speaker === "compass" ? "compass" : "user",
-              text: msg.text as string,
-              timestamp: new Date().toISOString(),
-            },
-          });
+        case "transcript": {
+          const speaker = msg.speaker === "compass" ? "compass" : "user";
+          const text = msg.text as string;
+          // Always UPDATE rather than ADD — UPDATE appends to the current speaker's
+          // bubble (or creates a new one when the speaker changes). Using ADD for
+          // final=true would create a duplicate second bubble containing only the
+          // last streaming chunk, abandoning the accumulated partial bubble.
+          dispatch({ type: "UPDATE_LAST_TRANSCRIPT", speaker, text });
           break;
+        }
 
         case "phase_change":
           dispatch({ type: "SET_PHASE", phase: msg.phase as Phase });
@@ -480,6 +497,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       ws.onclose = () => {
         dispatch({ type: "SET_CONNECTED", value: false });
         dispatch({ type: "SET_LISTENING", value: false });
+        reconnectAttemptsRef.current += 1;
+        // Stop reconnecting after 5 failures — voice is broken, text chat still works
+        if (reconnectAttemptsRef.current > 5) return;
         // Auto-reconnect with capped exponential backoff
         const delay = reconnectDelayRef.current;
         reconnectTimerRef.current = setTimeout(() => {
@@ -497,6 +517,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       dispatch({ type: "SET_SESSION", sessionId });
       reconnectDelayRef.current = 2000; // reset backoff on explicit connect
+    reconnectAttemptsRef.current = 0; // reset failure counter on explicit connect
     },
     [handleMessage, playPCMAudio]
   );
@@ -586,15 +607,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       try {
         const res = await api.chat(sessionId, text);
-        if (res.response) {
+        if (res.reply) {
           dispatch({
             type: "ADD_TRANSCRIPT",
             entry: {
               speaker: "compass",
-              text: res.response,
+              text: res.reply,
               timestamp: new Date().toISOString(),
             },
           });
+        }
+        // Dispatch tool-call events returned by the REST sidecar
+        for (const event of res.events ?? []) {
+          handleMessage(event as Record<string, unknown>, sessionId);
         }
         await loadAssessment(sessionId);
       } catch (err) {
