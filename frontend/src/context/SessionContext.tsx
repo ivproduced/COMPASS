@@ -659,6 +659,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => () => { disconnect(); }, [disconnect]);
 
+  // Poll Firestore for panel updates every 6 s while a session is active.
+  // This is the safety net for the voice path: the sidecar runs async so
+  // WebSocket events may arrive slightly after the panel data is written.
+  useEffect(() => {
+    const sid = state.sessionId;
+    if (!sid) return;
+    const id = setInterval(() => { refreshAssessment(); }, 6000);
+    return () => clearInterval(id);
+  }, [state.sessionId, refreshAssessment]);
+
   return (
     <SessionContext.Provider
       value={{

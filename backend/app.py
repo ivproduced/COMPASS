@@ -527,7 +527,6 @@ async def analyze_transcript_for_tools(
     session_id: str,
     websocket: WebSocket,
     user_text: str,
-    gemini_session=None,  # AsyncLiveSession — injected so results feed back into Live context
 ) -> None:
     """After each user turn, call generate_content (gemini-2.5-pro) to decide
     which tools to invoke, push UI events to the client, and inject a context
@@ -603,22 +602,8 @@ Choose the single most appropriate tool based on the conversation above."""
                         except Exception:
                             pass  # WS may already be closed
 
-                    # Build a context note to inject back into the Live session
-                    context_note = _build_context_note(fn_name, fn_args, result)
-                    if context_note and gemini_session:
-                        try:
-                            await gemini_session.send_client_content(
-                                turns=[
-                                    types.Content(
-                                        role="user",
-                                        parts=[types.Part(text=context_note)],
-                                    )
-                                ],
-                                turn_complete=False,  # context only — don't trigger a response
-                            )
-                            logger.info("Sidecar context injected: %s", context_note[:80])
-                        except Exception as inj_exc:
-                            logger.warning("Context injection failed: %s", inj_exc)
+                    # Context injection removed: send_client_content on a live
+                    # session causes concurrent gRPC write conflicts → 1011 crashes.
     except Exception as exc:
         logger.error("Sidecar tool analysis failed: %s", exc)
 
@@ -811,23 +796,21 @@ async def live_session(websocket: WebSocket):
 
             async def send_to_client():
                 """Forward Gemini responses to client."""
+                # Accumulate transcription across streaming chunks.
+                # Transcription.finished is always None in the SDK so we cannot
+                # rely on it. Instead we accumulate text and flush on turn_complete.
+                user_buf: list[str] = []
+                compass_buf: list[str] = []
+
                 try:
                     logger.info("send_to_client: waiting for Gemini responses")
                     while True:  # receive() covers one turn; loop for multi-turn
                       async for response in gemini_session.receive():
-                        # Log the full raw structure so we can debug what comes back
-                        logger.info("Gemini raw response: data=%s sc=%s text=%s tool=%s",
-                            len(response.data) if response.data else None,
-                            type(response.server_content).__name__ if response.server_content else None,
-                            repr(response.text)[:80] if response.text else None,
-                            response.tool_call is not None,
-                        )
 
-                        # PCM audio response — try both .data and inline_data in parts
+                        # PCM audio response
                         sc = response.server_content
                         audio_sent = False
                         if response.data:
-                            logger.info("Gemini audio chunk (data): %d bytes", len(response.data))
                             await websocket.send_bytes(response.data)
                             audio_sent = True
 
@@ -835,44 +818,67 @@ async def live_session(websocket: WebSocket):
                         if sc and sc.model_turn and not audio_sent:
                             for part in (sc.model_turn.parts or []):
                                 if part.inline_data and part.inline_data.data:
-                                    logger.info("Gemini audio chunk (inline_data): %d bytes mime=%s",
-                                                len(part.inline_data.data), part.inline_data.mime_type)
                                     await websocket.send_bytes(part.inline_data.data)
                                     audio_sent = True
 
-                        # Native-audio output transcription (COMPASS's response)
                         if sc:
+                            # Accumulate COMPASS output transcription
                             if sc.output_transcription and sc.output_transcription.text:
-                                t = sc.output_transcription
+                                compass_buf.append(sc.output_transcription.text)
                                 await websocket.send_text(json.dumps({
                                     "type": "transcript",
                                     "speaker": "compass",
-                                    "text": t.text,
-                                    "final": bool(t.finished),
+                                    "text": sc.output_transcription.text,
+                                    "final": False,
                                 }))
-                                if t.finished:
-                                    await firestore_service.add_transcript_entry(session_id, {
-                                        "speaker": "compass",
-                                        "text": t.text,
-                                    })
 
-                            # Native-audio input transcription (user's speech)
+                            # Accumulate user input transcription
                             if sc.input_transcription and sc.input_transcription.text:
-                                t = sc.input_transcription
+                                user_buf.append(sc.input_transcription.text)
                                 await websocket.send_text(json.dumps({
                                     "type": "transcript",
                                     "speaker": "user",
-                                    "text": t.text,
-                                    "final": bool(t.finished),
+                                    "text": sc.input_transcription.text,
+                                    "final": False,
                                 }))
-                                if t.finished:
+
+                            # turn_complete fires when Gemini finishes its response.
+                            # At this point both user and COMPASS turns are fully buffered.
+                            if sc.turn_complete:
+                                logger.info("turn_complete: user_buf=%d words, compass_buf=%d words",
+                                            len(user_buf), len(compass_buf))
+
+                                if compass_buf:
+                                    full_compass = " ".join(compass_buf)
+                                    compass_buf.clear()
+                                    # Mark the last streaming chunk as final
+                                    await websocket.send_text(json.dumps({
+                                        "type": "transcript",
+                                        "speaker": "compass",
+                                        "text": "",
+                                        "final": True,
+                                    }))
+                                    await firestore_service.add_transcript_entry(session_id, {
+                                        "speaker": "compass",
+                                        "text": full_compass,
+                                    })
+
+                                if user_buf:
+                                    full_user = " ".join(user_buf)
+                                    user_buf.clear()
+                                    await websocket.send_text(json.dumps({
+                                        "type": "transcript",
+                                        "speaker": "user",
+                                        "text": "",
+                                        "final": True,
+                                    }))
                                     await firestore_service.add_transcript_entry(session_id, {
                                         "speaker": "user",
-                                        "text": t.text,
+                                        "text": full_user,
                                     })
-                                    # Kick off sidecar tool execution after each user turn
+                                    logger.info("Sidecar trigger: user turn complete (%d chars)", len(full_user))
                                     asyncio.create_task(
-                                        analyze_transcript_for_tools(session_id, websocket, t.text, gemini_session)
+                                        analyze_transcript_for_tools(session_id, websocket, full_user)
                                     )
 
                         # Text modality fallback (non-native-audio models)
@@ -887,10 +893,6 @@ async def live_session(websocket: WebSocket):
                                 "speaker": "compass",
                                 "text": response.text,
                             })
-
-                        # NOTE: tool_call handling removed — native-audio Live API models
-                        # do not support function calling.  Tools run via the
-                        # analyze_transcript_for_tools() sidecar above.
 
                 except WebSocketDisconnect:
                     logger.info("send_to_client: browser disconnected cleanly")
