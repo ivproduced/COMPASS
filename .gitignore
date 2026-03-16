@@ -20,6 +20,8 @@ build/
 !.env.example
 
 # ---- Google Cloud credentials (NEVER commit) --------------------------------
+key.json
+*.json.key
 service-account-key.json
 *-sa-key.json
 application_default_credentials.json
