@@ -364,6 +364,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         case "classification": {
           const cls = data as Classification;
           dispatch({ type: "SET_CLASSIFICATION", data: cls });
+          // Baseline controls come with the classification event — upsert them
+          const baselineControls = (data?.baseline_controls ?? []) as Array<Record<string, unknown>>;
+          for (const c of baselineControls) {
+            const ctrl = c as ControlMapping;
+            if (ctrl?.control_id) dispatch({ type: "UPSERT_CONTROL", data: ctrl });
+          }
           dispatch({
             type: "SET_LATEST_EVENT",
             event: {

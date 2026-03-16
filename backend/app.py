@@ -317,6 +317,28 @@ app.add_middleware(
 # Tool execution router (called when Gemini invokes a function)
 # ------------------------------------------------------------------
 
+def _load_baseline_controls(fedramp_baseline: str) -> list[dict]:
+    """Return all controls for the given FedRAMP baseline, enriched with
+    title and family from the NIST 800-53 catalog."""
+    from backend.tools.gap_analyzer import _load_baseline
+    from backend.tools.control_lookup import _load_catalog
+    ids = _load_baseline(fedramp_baseline)
+    catalog = _load_catalog()
+    controls = []
+    for ctrl_id in ids:
+        cat_entry = catalog.get(ctrl_id.upper())
+        if not cat_entry:
+            continue  # skip enhancements/sub-controls not in catalog
+        controls.append({
+            "control_id": ctrl_id,
+            "control_title": cat_entry.get("title", ""),
+            "control_family": cat_entry.get("family", ctrl_id.split("-")[0] if "-" in ctrl_id else ""),
+            "implementation_status": "not_assessed",
+            "implementation_description": "",
+        })
+    return controls
+
+
 async def execute_tool(function_name: str, args: dict, session_id: str) -> dict:
     """Dispatch a Gemini function call to the matching Python tool.
 
@@ -358,7 +380,24 @@ async def execute_tool(function_name: str, args: dict, session_id: str) -> dict:
                 "rationale": result.get("rationale", ""),
                 "fedramp_baseline": result.get("fedramp_baseline", ""),
             }
-            result["_event"] = {"type": "classification", "data": cls_ui}
+            # Pre-populate the Controls tab with the full FedRAMP baseline for
+            # this classification so the UI shows all applicable controls immediately.
+            baseline_key = result.get("fedramp_baseline", "moderate")
+            baseline_controls = _load_baseline_controls(baseline_key)
+            logger.info("Pre-populating %d baseline controls for %s", len(baseline_controls), baseline_key)
+            for mapping in baseline_controls:
+                await firestore_service.upsert_control_mapping(session_id, mapping)
+            await firestore_service.set_phase(session_id, "mapping")
+            result["_event"] = {
+                "type": "classification",
+                "data": {
+                    **cls_ui,
+                    "baseline_controls": [
+                        {"control_id": c["control_id"], "control_title": c["control_title"]}
+                        for c in baseline_controls[:20]  # send first 20 to WS for preview
+                    ],
+                },
+            }
             return result
 
         # ---- search_controls ----------------------------------------
@@ -543,15 +582,17 @@ _PHASE_MAP = {
 def _sidecar_allowed_tools(cls: dict | None, num_controls: int) -> list[str]:
     """Return the allowed tool names for the sidecar at the current assessment stage.
     Using mode=ANY forces Gemini to call a function — we restrict the list so it
-    only picks tools that are actually appropriate right now."""
+    only picks tools that are actually appropriate right now.
+
+    Baseline controls are pre-populated automatically on classification, so the
+    sidecar jumps straight to gap_analysis once a classification exists.
+    """
     if not cls:
         # No classification yet — force classify_system directly.
         # Gemini will extract data types from the conversation and pass them in.
         return ["classify_system"]
-    if num_controls < 3:
-        # Post-classification: start mapping controls
-        return ["search_controls", "control_lookup"]
-    # Enough controls mapped — do gap analysis or OSCAL
+    # Classification exists: go straight to gap/OSCAL.
+    # search_controls is no longer needed — baseline is pre-loaded on classify.
     return ["gap_analysis", "generate_oscal"]
 
 
