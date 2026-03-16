@@ -1,0 +1,238 @@
+COMPASS Source Available License
+Copyright (c) 2026 euCann LLC. All rights reserved.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FREE USE — Permitted Without a License
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The following uses are permitted free of charge:
+
+1. U.S. federal, state, local, and tribal government agencies, and contractors
+   operating directly on behalf of a government agency under a government
+   contract, for government purposes only.
+
+2. Personal, non-commercial, and hobbyist use.
+
+3. Academic research, education, and non-profit use.
+
+4. Evaluation and internal testing (not deployed in production for a
+   commercial purpose).
+
+All free use is subject to the conditions below.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMMERCIAL USE — Requires a Paid License
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+A paid commercial license is required for any of the following:
+
+- Using this software as part of a product or service that is sold, licensed,
+  or otherwise monetized (e.g., SaaS, consulting deliverables, managed
+  services, packaged assessments).
+
+- Deploying this software internally at a for-profit company with annual
+  revenue exceeding $1,000,000 USD.
+
+- Offering this software — or any derivative — as a service to third parties,
+  whether or not a fee is charged.
+
+- Any use by a professional services, consulting, or systems integration firm
+  (e.g., using this software in client engagements or proposals).
+
+To obtain a commercial license, contact:
+
+    euCann LLC
+    info@eucann.life
+
+Unauthorized commercial use is prohibited and constitutes copyright
+infringement.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONDITIONS (Applies to All Use)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. This license notice and copyright notice must be retained in all copies or
+   substantial portions of the software.
+
+2. You may not sublicense, resell, or redistribute this software to any third
+   party as a standalone product or as a material component of a commercial
+   offering.
+
+3. You may not remove or alter any copyright, trademark, or attribution
+   notices.
+
+4. Modifications and derivative works are permitted under the same terms as
+   this license. Derivatives do not transfer ownership or license rights beyond
+   those granted here.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DISCLAIMER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+EUCANN LLC BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 1 — GOVERNMENT USE LICENSE (Free)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+United States federal, state, local, and tribal government agencies, as well
+as contractors operating directly on behalf of a U.S. government agency under
+a government contract, are granted a perpetual, royalty-free, non-exclusive
+license to use, copy, modify, and distribute this software and its
+documentation solely for government purposes, subject to the following
+conditions:
+
+1. This license notice and copyright notice must be retained in all copies or
+   substantial portions of the software.
+
+2. Redistribution to non-government parties requires a separate Commercial
+   License (see Part 2).
+
+3. The software is provided "AS IS", without warranty of any kind, express or
+   implied. euCann LLC shall not be liable for any damages arising from use.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PART 2 — COMMERCIAL LICENSE (Paid)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Any use of this software outside of U.S. government use as defined in Part 1 —
+including but not limited to use by private companies, startups, nonprofits,
+consultancies, SaaS products, internal enterprise tooling, or any for-profit
+application — requires a paid commercial license.
+
+To obtain a commercial license, contact:
+
+    euCann LLC
+    info@eucann.life
+
+Unauthorized commercial use of this software is prohibited and constitutes
+copyright infringement.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+GENERAL TERMS (Applies to All Use)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- You may not sublicense, sell, or transfer this software to any third party
+  without explicit written permission from euCann LLC.
+- You may not remove or alter any copyright, trademark, or attribution notices.
+- euCann LLC reserves the right to update these license terms for future
+  versions of the software.
+
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+EUCANN LLC BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Software" means the COMPASS source code, documentation, and all associated
+files made available under this license.
+
+"Licensor" means euCann LLC.
+
+"Permitted User" means any person or entity that qualifies under Section 2.
+
+"Commercial Use" means any use of the Software intended for or resulting in
+commercial advantage or monetary compensation, including but not limited to:
+  - Incorporating the Software into a product or service sold or licensed
+    to third parties;
+  - Offering the Software or a derivative work as a hosted or managed service
+    (SaaS, PaaS, or similar);
+  - Using the Software to provide paid consulting, implementation, or
+    professional services to third parties;
+  - Internal use within a for-profit organization where the Software
+    contributes to revenue-generating activities.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. FREE PERMITTED USES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The following uses are permitted free of charge:
+
+  a) GOVERNMENT  — Any U.S. federal, state, local, or tribal government
+     agency or instrumentality, for internal government purposes.
+
+  b) PERSONAL    — Individual use by a natural person for their own
+     non-commercial purposes.
+
+  c) ACADEMIC    — Accredited educational institutions and their students
+     or faculty, for teaching and coursework.
+
+  d) RESEARCH    — Non-commercial research by individuals, universities,
+     or non-profit research organizations, provided results are not
+     directly used to generate revenue.
+
+  e) EVALUATION  — Any person or organization may use the Software for
+     internal evaluation and proof-of-concept purposes for up to 30 days.
+
+Permitted Users may use, copy, modify, and run the Software subject to the
+conditions in Section 4. Redistribution is permitted only for government
+entities operating within the scope of (a), and only to other Permitted Users.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. COMMERCIAL USE — LICENSE REQUIRED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Any Commercial Use of the Software requires a separate paid license from
+euCann LLC. This includes, without limitation:
+
+  - Consulting firms, system integrators, and contractors billing clients
+    for work that involves this Software;
+  - SaaS or software companies embedding this Software in a commercial
+    product or offering;
+  - For-profit organizations deploying this Software in production to
+    support revenue-generating operations;
+  - Government contractors using this Software as part of a funded contract
+    where the contractor (not the government agency) is the primary
+    beneficiary.
+
+To obtain a commercial license, contact:
+
+    euCann LLC — info@eucann.life
+
+Unauthorized Commercial Use is a material breach of this license and may
+subject the user to liability under applicable intellectual property law.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. CONDITIONS (ALL USERS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  a) This copyright notice and license text must be retained in all copies
+     or substantial portions of the Software.
+
+  b) Derivative works must carry a prominent notice stating that changes
+     were made and must be distributed under this same license.
+
+  c) You may not remove, obscure, or alter any proprietary notices or
+     labels on the Software.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. DISCLAIMER OF WARRANTIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL
+EUCANN LLC BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM
+USE OF THE SOFTWARE.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. ALL OTHER RIGHTS RESERVED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Any use not expressly permitted above requires prior written consent from
+euCann LLC.
+
+Licensing inquiries: info@eucann.life
