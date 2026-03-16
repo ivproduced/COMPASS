@@ -2,7 +2,7 @@
 
 **C**ompliance **M**apping and **P**olicy **A**ssessment **S**peech **S**ystem
 
-> A FedRAMP compliance voice agent powered by Gemini 2.5 Pro Live API.  
+> A FedRAMP compliance voice agent powered by Gemini 2.5 Flash Native Audio.  
 > Submitted to the **Gemini Live Agent Challenge** — *Live Agents* category.
 
 ---
@@ -148,12 +148,44 @@ npm run dev
 
 ## Running Tests
 
-```bash
-# Unit tests (no GCP required)
-pytest tests/ -v --ignore=tests/test_integration.py
+Unit tests run fully offline — no GCP credentials, no network access required.
 
-# Integration tests (requires live GCP credentials)
-pytest tests/ -v --integration
+```bash
+# 1. Activate virtualenv (if not already)
+source .venv/bin/activate
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Run unit tests
+ENV=test pytest tests/ -v --ignore=tests/test_integration.py
+```
+
+Expected output: all tests in `tests/test_classifier.py`, `tests/test_mapper.py`, and `tests/test_oscal_generator.py` pass. No environment variables or credentials needed.
+
+```bash
+# Run a specific test file
+ENV=test pytest tests/test_classifier.py -v
+
+# Run with short traceback on failure
+ENV=test pytest tests/ -v --tb=short --ignore=tests/test_integration.py
+```
+
+### Integration Tests
+
+Integration tests require live GCP credentials and a provisioned project:
+
+```bash
+# Authenticate
+gcloud auth application-default login
+
+# Set required environment variables
+export GOOGLE_CLOUD_PROJECT=your-project-id
+export FIRESTORE_DATABASE=compass
+export GCS_BUCKET_OSCAL=your-bucket-name
+
+# Run integration tests
+ENV=test pytest tests/test_integration.py -v
 ```
 
 ---
@@ -209,7 +241,8 @@ Key variables:
 | Variable | Description | Default |
 |---|---|---|
 | `GOOGLE_CLOUD_PROJECT` | GCP project ID | `compass-fedramp` |
-| `GEMINI_MODEL` | Gemini model name | `gemini-2.5-pro` |
+| `GEMINI_MODEL` | Gemini text model name | `gemini-2.5-pro` |
+| `GEMINI_LIVE_MODEL` | Gemini Live API model | `gemini-2.5-flash-native-audio-latest` |
 | `GEMINI_VOICE` | TTS voice | `Kore` |
 | `FIRESTORE_DATABASE` | Firestore database name | `compass` |
 | `GCS_BUCKET_OSCAL` | GCS bucket for OSCAL outputs | `compass-fedramp-oscal` |
@@ -245,7 +278,7 @@ Connect to `wss://<host>/ws/live`.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Source-available — free for government, personal, academic, and research use. Commercial use requires a paid license. See [LICENSE](LICENSE) for full terms or contact info@eucann.life.
 
 ---
 
