@@ -33,9 +33,21 @@ def _load_catalog() -> dict[str, dict]:
                 for ctrl in data:
                     if ctrl_id := ctrl.get("id"):
                         catalog[ctrl_id.upper()] = ctrl
+                    # Index control enhancements (e.g. AC-2.1 nested under AC-2)
+                    for enh in ctrl.get("enhancements", []):
+                        if enh_id := enh.get("id"):
+                            # Inherit family info from parent if not present
+                            if "family" not in enh and "family" in ctrl:
+                                enh = {**enh, "family": ctrl["family"], "family_title": ctrl.get("family_title", "")}
+                            catalog[enh_id.upper()] = enh
             elif isinstance(data, dict):
                 if ctrl_id := data.get("id"):
                     catalog[ctrl_id.upper()] = data
+                for enh in data.get("enhancements", []):
+                    if enh_id := enh.get("id"):
+                        if "family" not in enh and "family" in data:
+                            enh = {**enh, "family": data["family"], "family_title": data.get("family_title", "")}
+                        catalog[enh_id.upper()] = enh
         except Exception as exc:
             logger.error("Failed to load control file %s: %s", fp, exc)
     logger.info("Loaded %d controls from local catalog", len(catalog))

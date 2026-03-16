@@ -328,7 +328,7 @@ def _load_baseline_controls(fedramp_baseline: str) -> list[dict]:
     for ctrl_id in ids:
         cat_entry = catalog.get(ctrl_id.upper())
         if not cat_entry:
-            continue  # skip enhancements/sub-controls not in catalog
+            continue  # skip IDs not present in catalog (malformed baseline entries)
         controls.append({
             "control_id": ctrl_id,
             "control_title": cat_entry.get("title", ""),
