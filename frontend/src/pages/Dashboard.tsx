@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 import { api, type SessionSummary } from "@/lib/api";
 
 const PHASE_COLOR: Record<string, string> = {
@@ -26,6 +27,19 @@ const Dashboard = () => {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDeleteSession = async (e: React.MouseEvent, sessionId: string) => {
+    e.stopPropagation();
+    if (!confirm("Delete this session? This cannot be undone.")) return;
+    setDeleting(sessionId);
+    try {
+      await api.deleteSession(sessionId);
+      setSessions((prev) => prev.filter((s) => s.session_id !== sessionId));
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   useEffect(() => {
     api
@@ -88,12 +102,13 @@ const Dashboard = () => {
         </div>
 
         <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <div className="grid grid-cols-[40px_1fr_100px_160px_120px] px-4 h-10 items-center border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <div className="grid grid-cols-[40px_1fr_100px_160px_120px_40px] px-4 h-10 items-center border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wider">
             <span />
             <span>System Name</span>
             <span>Phase</span>
             <span>Controls</span>
             <span>Last Active</span>
+            <span />
           </div>
 
           {loading ? (
@@ -114,7 +129,7 @@ const Dashboard = () => {
                 <div
                   key={s.session_id}
                   onClick={() => navigate(`/session/${s.session_id}`)}
-                  className="grid grid-cols-[40px_1fr_100px_160px_120px] px-4 h-14 items-center border-b border-border last:border-b-0 cursor-pointer hover:bg-accent/40 transition-colors"
+                  className="grid grid-cols-[40px_1fr_100px_160px_120px_40px] px-4 h-14 items-center border-b border-border last:border-b-0 cursor-pointer hover:bg-accent/40 transition-colors"
                 >
                   <span className={`w-2.5 h-2.5 rounded-full ${color}`} />
                   <span className="text-sm text-foreground">{name}</span>
@@ -125,6 +140,13 @@ const Dashboard = () => {
                   <span className="text-sm text-muted-foreground">
                     {timeAgo(s.updatedAt ?? s.createdAt)}
                   </span>
+                  <button
+                    onClick={(e) => handleDeleteSession(e, s.session_id)}
+                    disabled={deleting === s.session_id}
+                    className="flex items-center justify-center w-7 h-7 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-40"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               );
             })

@@ -89,6 +89,17 @@ class FirestoreService:
         results.sort(key=lambda x: x.get("updatedAt", ""), reverse=True)
         return results
 
+    async def delete_session(self, session_id: str) -> None:
+        """Delete a session and all its subcollections."""
+        db = self._get_client()
+        session_ref = db.collection(_COL_SESSIONS).document(session_id)
+        for subcol in [_COL_CONTROL_MAPPINGS, _COL_GAP_FINDINGS, _COL_TRANSCRIPT]:
+            docs = session_ref.collection(subcol).stream()
+            async for doc in docs:
+                await doc.reference.delete()
+        await session_ref.delete()
+        logger.info("Deleted session %s", session_id)
+
     async def set_phase(self, session_id: str, phase: str) -> None:
         await self.update_session(session_id, {"conversationPhase": phase})
 

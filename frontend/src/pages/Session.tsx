@@ -18,7 +18,7 @@ function SessionInner() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <TopNav pageTitle={id ? `Session ${id.slice(0, 8)}…` : "Session"} editable />
+      <TopNav pageTitle={id ? `Session ${id.slice(0, 8)}…` : "Session"} editable sessionId={id} />
 
       <div className="flex-1 flex min-h-0">
         <VoicePanel />

@@ -1,14 +1,32 @@
+import { useState } from "react";
 import { Compass, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
 
 interface TopNavProps {
   pageTitle: string;
   editable?: boolean;
+  sessionId?: string;
 }
 
-const TopNav = ({ pageTitle, editable = false }: TopNavProps) => {
+const TopNav = ({ pageTitle, editable = false, sessionId }: TopNavProps) => {
   const navigate = useNavigate();
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (!sessionId) return;
+    setExporting(true);
+    try {
+      const { download_url } = await api.generateOscal(sessionId, "ssp");
+      window.open(download_url, "_blank");
+    } catch {
+      // silent
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <nav className="h-14 w-full bg-card border-b border-border flex items-center justify-between px-4 shrink-0">
       {/* Left: Wordmark */}
@@ -33,9 +51,15 @@ const TopNav = ({ pageTitle, editable = false }: TopNavProps) => {
 
       {/* Right: Export + Avatar */}
       <div className="flex items-center gap-3">
-        <Button variant="outline" size="sm" className="gap-1.5 text-muted-foreground">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 text-muted-foreground"
+          onClick={handleExport}
+          disabled={!sessionId || exporting}
+        >
           <Download className="h-4 w-4" />
-          Export
+          {exporting ? "Generating…" : "Export"}
         </Button>
 
       </div>

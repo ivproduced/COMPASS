@@ -8,6 +8,7 @@ Endpoints:
   POST      /api/agent/{session_id}       — ADK agent pipeline (sub-agent delegation)
   GET       /api/sessions                 — List sessions for authenticated user
   POST      /api/sessions                 — Create a new session
+  DELETE    /api/sessions/{id}            — Delete a session and all its data
   GET       /api/sessions/{id}            — Get session state + assessment summary
   GET       /api/assessments/{id}         — Get full control mappings + gaps
   GET       /api/oscal/{id}/{type}        — Get signed OSCAL download URL
@@ -1100,6 +1101,14 @@ async def get_session(session_id: str):
     return session
 
 
+@app.delete("/api/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_session(session_id: str):
+    session = await firestore_service.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    await firestore_service.delete_session(session_id)
+
+
 @app.get("/api/assessments/{session_id}")
 async def get_assessment(session_id: str):
     session = await firestore_service.get_session(session_id)
@@ -1145,6 +1154,32 @@ async def get_assessment(session_id: str):
         "oscalOutputs": oscal_outputs,
         "complianceScore": score.model_dump(),
     }
+
+
+@app.post("/api/oscal/{session_id}/generate")
+async def generate_oscal_endpoint(session_id: str, body: dict = {}):
+    """Trigger OSCAL generation for a session on demand (SSP by default)."""
+    from backend.tools.oscal_generator import generate_oscal_impl
+    session = await firestore_service.get_session(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    mappings = await firestore_service.get_control_mappings(session_id)
+    gaps = await firestore_service.get_gap_findings(session_id)
+    profile = session.get("systemProfile", {})
+    doc_type = body.get("document_type", "ssp")
+    result = generate_oscal_impl(
+        document_type=doc_type,
+        control_mappings=mappings,
+        gap_findings=gaps,
+        system_name=profile.get("systemName", ""),
+        system_description=profile.get("description", ""),
+    )
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
+    gcs_path = storage_service.upload_oscal(session_id, doc_type, result.get("content", {}), ts)
+    await firestore_service.save_oscal_output(session_id, doc_type, gcs_path)
+    await firestore_service.set_phase(session_id, "oscal")
+    signed_url = storage_service.generate_signed_url(gcs_path, expiry_minutes=60)
+    return {"document_type": doc_type, "download_url": signed_url, "gcs_path": gcs_path}
 
 
 @app.get("/api/oscal/{session_id}/{doc_type}")

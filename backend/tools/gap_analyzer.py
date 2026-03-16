@@ -80,8 +80,8 @@ def gap_analysis_impl(
         or "haven't" in _impl_lower
         or "we lack" in _impl_lower
         or "without" in _impl_lower
-        or re.search(r"\bnot\s+\w+ed\b", _impl_lower)  # "not encrypted", "not configured"
-        or re.search(r"\bno\s+\w+\b", _impl_lower)     # "no controls", "no process"
+        or re.search(r"\bnot\s+(?!needed|required|applicable|allowed|necessary)\w+ed\b", _impl_lower)  # "not encrypted", "not configured" (not "not needed")
+        or re.search(r"\bno\s+(?:controls?|process|policy|policies|mechanism|logging|monitoring|mfa|authentication|encryption|audit|review|scanning|baseline|documentation)\b", _impl_lower)  # specific "no X" gaps only
         or re.search(r"\bneed\s+to\b", _impl_lower)     # "need to implement"
     )
 

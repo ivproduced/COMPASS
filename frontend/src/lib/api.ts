@@ -95,6 +95,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ system_name: systemName ?? "", user_id: userId }),
     }),
+  deleteSession: (id: string) =>
+    request<void>(`/api/sessions/${id}`, { method: "DELETE" }),
 
   // Assessment (controls + gaps + classification + OSCAL)
   getAssessment: (id: string) =>
@@ -108,6 +110,13 @@ export const api = {
   getOscalUrl: (id: string, type: string) =>
     request<{ download_url: string; expires_in_minutes: number }>(
       `/api/oscal/${id}/${type}`
+    ),
+
+  // Generate OSCAL on demand
+  generateOscal: (id: string, documentType = "ssp") =>
+    request<{ document_type: string; download_url: string; gcs_path: string }>(
+      `/api/oscal/${id}/generate`,
+      { method: "POST", body: JSON.stringify({ document_type: documentType }) }
     ),
 
   // Diagram upload
