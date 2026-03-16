@@ -38,6 +38,7 @@ from fastapi import (
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from google import genai
 from google.genai import types
 
@@ -202,7 +203,17 @@ TOOL_DECLARATIONS = [
             type="OBJECT",
             properties={
                 "control_id": types.Schema(type="STRING"),
-                "current_implementation": types.Schema(type="STRING"),
+                "current_implementation": types.Schema(
+                    type="STRING",
+                    description=(
+                        "CRITICAL: Quote the user's EXACT words about this control's implementation. "
+                        "Do NOT paraphrase, summarize, or rewrite. If the user said it is NOT implemented, "
+                        "missing, absent, or not in place, those exact words MUST appear here. "
+                        "Examples: 'MFA is NOT implemented', 'we have no logging', "
+                        "'encryption is not configured', 'we don't have this in place'. "
+                        "The gap scoring engine reads this field literally — paraphrasing breaks detection."
+                    ),
+                ),
                 "required_implementation": types.Schema(type="STRING"),
                 "component": types.Schema(type="STRING"),
             },
@@ -386,8 +397,9 @@ async def execute_tool(function_name: str, args: dict, session_id: str) -> dict:
             baseline_key = result.get("fedramp_baseline", "moderate")
             baseline_controls = _load_baseline_controls(baseline_key)
             logger.info("Pre-populating %d baseline controls for %s", len(baseline_controls), baseline_key)
-            for mapping in baseline_controls:
-                await firestore_service.upsert_control_mapping(session_id, mapping)
+            # Use batched commits (single RPC per 400 controls) — far more reliable
+            # than 400+ concurrent individual writes which hit Firestore concurrency limits.
+            await firestore_service.bulk_upsert_control_mappings(session_id, baseline_controls)
             await firestore_service.set_phase(session_id, "mapping")
             result["_event"] = {
                 "type": "classification",
@@ -480,10 +492,28 @@ async def execute_tool(function_name: str, args: dict, session_id: str) -> dict:
                 }
                 await firestore_service.add_gap_finding(session_id, finding)
             await firestore_service.set_phase(session_id, "gaps")
-            result["_event"] = {
-                "type": "gap_found" if result.get("is_gap") else "control_assessed",
-                "data": result,
-            }
+            if result.get("is_gap"):
+                # Shape the WS event to match the frontend GapFinding interface:
+                # gap_description (not current_implementation), plus control_id etc.
+                result["_event"] = {
+                    "type": "gap_found",
+                    "data": {
+                        "control_id": ctrl_id,
+                        "gap_description": result.get("current_implementation", ""),
+                        "risk_level": result.get("risk_level", "high"),
+                        "remediation": result.get("remediation", ""),
+                        "estimated_effort": result.get("estimated_effort", "weeks"),
+                    },
+                }
+            else:
+                result["_event"] = {
+                    "type": "control_assessed",
+                    "data": {
+                        "control_id": ctrl_id,
+                        "implementation_status": result.get("implementation_status", "not_assessed"),
+                        "implementation_description": args.get("current_implementation", ""),
+                    },
+                }
             return result
 
         # ---- generate_oscal -----------------------------------------
@@ -592,9 +622,9 @@ def _sidecar_allowed_tools(cls: dict | None, num_controls: int) -> list[str]:
         # No classification yet — force classify_system directly.
         # Gemini will extract data types from the conversation and pass them in.
         return ["classify_system"]
-    # Classification exists: go straight to gap/OSCAL.
-    # search_controls is no longer needed — baseline is pre-loaded on classify.
-    return ["gap_analysis", "generate_oscal"]
+    # Classification exists. Include search_controls as a safe fallback so the
+    # sidecar doesn't have to call gap_analysis on every non-gap turn.
+    return ["gap_analysis", "search_controls", "generate_oscal"]
 
 
 async def analyze_transcript_for_tools(
@@ -646,7 +676,12 @@ Choose the single most appropriate tool based on the conversation above.
 IMPORTANT for classify_system: If the user has explicitly stated CIA impact levels
 (e.g. "availability can be moderate", "confidentiality is high", "integrity is critical"),
 you MUST pass those as confidentiality_override / integrity_override / availability_override.
-Include all previously identified data_types from the session state when re-classifying."""
+Include all previously identified data_types from the session state when re-classifying.
+
+IMPORTANT for gap_analysis: The 'current_implementation' field MUST be a verbatim quote of
+what the user said. NEVER paraphrase or summarize it. If the user said a control is NOT
+implemented, not in place, missing, absent, or not configured, copy those exact words.
+Example: user says "MFA is NOT implemented" → current_implementation="MFA is NOT implemented"."""
 
         response = await genai_client.aio.models.generate_content(
             model=settings.gemini_model,
@@ -929,6 +964,14 @@ async def live_session(websocket: WebSocket):
                                 if not user_flushed:
                                     user_buf.append(sc.input_transcription.text)
 
+                            # interrupted fires when Gemini detected user speaking
+                            # over it and stopped its own response mid-stream.
+                            if sc.interrupted:
+                                logger.info("Gemini interrupted — discarding %d compass buf chunks", len(compass_buf))
+                                compass_buf.clear()
+                                user_flushed = False
+                                await websocket.send_text(json.dumps({"type": "interrupted"}))
+
                             # turn_complete fires when Gemini finishes its response.
                             if sc.turn_complete:
                                 logger.info("turn_complete: user_flushed=%s, compass_buf=%d chunks",
@@ -1178,12 +1221,12 @@ async def generate_oscal_endpoint(session_id: str, body: dict = {}):
     gcs_path = storage_service.upload_oscal(session_id, doc_type, result.get("content", {}), ts)
     await firestore_service.save_oscal_output(session_id, doc_type, gcs_path)
     await firestore_service.set_phase(session_id, "oscal")
-    signed_url = storage_service.generate_signed_url(gcs_path, expiry_minutes=60)
-    return {"document_type": doc_type, "download_url": signed_url, "gcs_path": gcs_path}
+    return {"document_type": doc_type, "gcs_path": gcs_path}
 
 
 @app.get("/api/oscal/{session_id}/{doc_type}")
-async def get_oscal_download_url(session_id: str, doc_type: str):
+async def get_oscal_download(session_id: str, doc_type: str):
+    """Proxy OSCAL document bytes directly from GCS — avoids signed URL signing issues on Cloud Run."""
     outputs = await firestore_service.get_oscal_outputs(session_id)
     matching = [o for o in outputs if o.get("type") == doc_type]
     if not matching:
@@ -1192,8 +1235,13 @@ async def get_oscal_download_url(session_id: str, doc_type: str):
     gcs_path = latest.get("gcsPath", "")
     if not gcs_path:
         raise HTTPException(status_code=404, detail="GCS path not found")
-    signed_url = storage_service.generate_signed_url(gcs_path, expiry_minutes=60)
-    return {"download_url": signed_url, "expires_in_minutes": 60}
+    content = storage_service.download_oscal_bytes(gcs_path)
+    filename = f"compass_{doc_type}_{session_id[:8]}.json"
+    return StreamingResponse(
+        iter([content]),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @app.post("/api/diagrams")

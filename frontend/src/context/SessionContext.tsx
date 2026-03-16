@@ -269,6 +269,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const streamRef = useRef<MediaStream | null>(null);
   const playbackCtxRef = useRef<AudioContext | null>(null);
   const nextPlayTimeRef = useRef<number>(0);
+  const activeSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectDelayRef = useRef<number>(2000);
   const reconnectAttemptsRef = useRef<number>(0);
@@ -319,6 +320,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       await loadAssessment(stateRef.current.sessionId, true);
     }
   }, [loadAssessment]);
+
+  // ── Playback control (defined before handleMessage to avoid TDZ) ─────────
+
+  const stopPlayback = useCallback(() => {
+    for (const src of activeSourcesRef.current) {
+      try { src.stop(); } catch { /* already finished */ }
+    }
+    activeSourcesRef.current = [];
+    nextPlayTimeRef.current = 0;
+  }, []);
 
   // ── Server message handler ─────────────────────────────────────────────────
 
@@ -476,12 +487,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           });
           break;
 
+        case "interrupted":
+          // Gemini was interrupted by the user speaking — clear queued audio immediately
+          stopPlayback();
+          break;
+
         case "error":
           console.error("[COMPASS WS]", msg.code, msg.message);
           break;
       }
     },
-    [loadAssessment]
+    [loadAssessment, stopPlayback]
   );
 
   // ── PCM audio playback ─────────────────────────────────────────────────────
@@ -509,6 +525,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const startAt = Math.max(now, nextPlayTimeRef.current);
     source.start(startAt);
     nextPlayTimeRef.current = startAt + audioBuffer.duration;
+    // Track so we can cancel on interruption
+    activeSourcesRef.current.push(source);
+    source.onended = () => {
+      activeSourcesRef.current = activeSourcesRef.current.filter(s => s !== source);
+    };
   }, []);
 
   // ── WebSocket connect ──────────────────────────────────────────────────────
@@ -588,6 +609,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const startListening = useCallback(async () => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    // Barge-in: immediately cut queued COMPASS audio so user hears themselves
+    stopPlayback();
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({

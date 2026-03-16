@@ -26,7 +26,10 @@ _INLINE_MODERATE_FAMILIES = [
 
 def _load_baseline(baseline: str = "moderate") -> list[str]:
     """Return list of control IDs in the specified FedRAMP baseline."""
-    key = baseline.lower().replace("-", "_")
+    # Normalise: "FedRAMP High" → "high", "FedRAMP Moderate" → "moderate", "high" → "high"
+    key = baseline.lower().strip()
+    key = key.replace("fedramp ", "").replace("fedramp_", "")  # strip prefix if present
+    key = key.replace(" ", "_").replace("-", "_")
     # Try new fedramp/ directory first
     path = _KNOWLEDGE_DIR / "fedramp" / f"fedramp_rev5_{key}_baseline.json"
     if not path.exists():
@@ -62,7 +65,10 @@ def gap_analysis_impl(
         Dict with gap assessment, risk level, and remediation guidance.
     """
     ctrl_id = control_id.strip().upper()
-    _impl_lower = current_implementation.lower()
+    # Normalize smart quotes/apostrophes to ASCII before matching
+    _impl_norm = current_implementation.replace("\u2019", "'").replace("\u2018", "'")
+    _impl_lower = _impl_norm.lower()
+    logger.info("gap_analysis_impl: control=%s impl=%r", ctrl_id, _impl_lower[:120])
 
     # Determine gap severity based on heuristics
     is_gap = bool(
@@ -71,18 +77,45 @@ def gap_analysis_impl(
         or "not implemented" in _impl_lower
         or "n/a" in _impl_lower
         or "have no" in _impl_lower
+        or "has no" in _impl_lower
         or "don't have" in _impl_lower
         or "dont have" in _impl_lower
         or "do not have" in _impl_lower
-        or "missing" in _impl_lower
+        or "does not have" in _impl_lower
+        or "don't use" in _impl_lower
+        or "dont use" in _impl_lower
+        or "do not use" in _impl_lower
+        or "does not use" in _impl_lower
+        or "don't currently" in _impl_lower
+        or "dont currently" in _impl_lower
+        or "do not currently" in _impl_lower
+        or "currently don't" in _impl_lower
+        or "currently do not" in _impl_lower        or "currently not" in _impl_lower          # catches "currently not using", "currently not implemented", etc.        or "missing" in _impl_lower
         or "absent" in _impl_lower
         or "not in place" in _impl_lower
         or "haven't" in _impl_lower
+        or "hasn't" in _impl_lower
         or "we lack" in _impl_lower
         or "without" in _impl_lower
-        or re.search(r"\bnot\s+(?!needed|required|applicable|allowed|necessary)\w+ed\b", _impl_lower)  # "not encrypted", "not configured" (not "not needed")
-        or re.search(r"\bno\s+(?:controls?|process|policy|policies|mechanism|logging|monitoring|mfa|authentication|encryption|audit|review|scanning|baseline|documentation)\b", _impl_lower)  # specific "no X" gaps only
-        or re.search(r"\bneed\s+to\b", _impl_lower)     # "need to implement"
+        or "not enabled" in _impl_lower
+        or "not deployed" in _impl_lower
+        or "not configured" in _impl_lower
+        or "not set up" in _impl_lower
+        or "not established" in _impl_lower
+        or "only password" in _impl_lower          # "username and password only" → no MFA
+        or "password only" in _impl_lower
+        or "just password" in _impl_lower
+        or "username and password" in _impl_lower  # classic no-MFA indicator for auth controls
+        or "use name and password" in _impl_lower  # STT variant of "username and password"
+        or re.search(r"\bnot\s+using\b", _impl_lower)   # "not using MFA", "not using 2FA"
+        or re.search(r"\bnot\s+(?!needed|required|applicable|allowed|necessary)\w+ed\b", _impl_lower)
+        or re.search(r"\bno\s+(?:controls?|process|policy|policies|mechanism|logging|monitoring|mfa|multi.?factor|authentication|2fa|encryption|audit|review|scanning|baseline|documentation)\b", _impl_lower)
+        or re.search(r"\bneed\s+to\b", _impl_lower)
+        or re.search(r"\bis\s+not\s+(?!needed|required|applicable|allowed|necessary)\b", _impl_lower)
+        or re.search(r"\bare\s+not\s+(?!needed|required|applicable|allowed|necessary)\b", _impl_lower)
+        or re.search(r"\bwas\s+not\s+(?!needed|required|applicable|allowed|necessary)\b", _impl_lower)
+        or re.search(r"\bonly\s+(?:using\s+)?(?:username|password|user(?:name)?[\s/]+password)\b", _impl_lower)
+        or re.search(r"\busing\s+only\s+\w", _impl_lower)  # "using only username/password/X"
     )
 
     is_partial = not is_gap and any(

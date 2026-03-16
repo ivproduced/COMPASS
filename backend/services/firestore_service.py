@@ -125,6 +125,22 @@ class FirestoreService:
             .set(mapping, merge=True)
         )
 
+    async def bulk_upsert_control_mappings(self, session_id: str, mappings: list[dict]) -> None:
+        """Write many control mappings in Firestore batched commits (max 500 ops each)."""
+        db = self._get_client()
+        ts = _utcnow()
+        session_ref = db.collection(_COL_SESSIONS).document(session_id)
+        BATCH_SIZE = 400  # stay well under the 500-op Firestore limit
+        for chunk_start in range(0, len(mappings), BATCH_SIZE):
+            chunk = mappings[chunk_start : chunk_start + BATCH_SIZE]
+            batch = db.batch()
+            for mapping in chunk:
+                m = {**mapping, "updatedAt": ts}
+                ctrl_id = m.get("control_id", str(uuid4()))
+                ref = session_ref.collection(_COL_CONTROL_MAPPINGS).document(ctrl_id)
+                batch.set(ref, m, merge=True)
+            await batch.commit()
+
     async def get_control_mappings(self, session_id: str) -> list[dict]:
         db = self._get_client()
         docs = (

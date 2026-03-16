@@ -53,6 +53,13 @@ class StorageService:
         logger.info("Uploaded OSCAL %s to %s", doc_type, gcs_path)
         return gcs_path
 
+    def download_oscal_bytes(self, gcs_path: str) -> bytes:
+        """Download an OSCAL document from GCS and return raw bytes."""
+        prefix = f"gs://{settings.gcs_bucket_oscal}/"
+        blob_name = gcs_path[len(prefix):] if gcs_path.startswith(prefix) else gcs_path
+        blob: Blob = self._bucket().blob(blob_name)
+        return blob.download_as_bytes()
+
     def generate_signed_url(self, gcs_path: str, expiry_minutes: int = 60) -> str:
         """Generate a signed download URL for a GCS object."""
         # Strip gs://bucket/ prefix to get blob name

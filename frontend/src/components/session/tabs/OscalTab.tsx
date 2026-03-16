@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSession } from "@/context/SessionContext";
-import { api } from "@/lib/api";
+import { BASE_URL, api } from "@/lib/api";
 
 /* Simple SVG donut */
 const DonutChart = ({
@@ -67,20 +67,31 @@ const DOC_LABELS: Record<string, string> = {
 };
 
 const OscalTab = () => {
-  const { sessionId, oscalDocs, complianceScore } = useSession();
-  const [downloading, setDownloading] = useState<string | null>(null);
+  const { sessionId, oscalDocs, complianceScore, classification, refreshAssessment } = useSession();
+  const [generating, setGenerating] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
-  const handleDownload = async (type: string) => {
+  const handleGenerate = async () => {
     if (!sessionId) return;
-    setDownloading(type);
+    setGenerating(true);
+    setGenError(null);
     try {
-      const { download_url } = await api.getOscalUrl(sessionId, type);
-      window.open(download_url, "_blank");
-    } catch {
-      // silent — user sees no response
+      await api.generateOscal(sessionId, "ssp");
+      await refreshAssessment();
+    } catch (e) {
+      setGenError("Generation failed — try again.");
     } finally {
-      setDownloading(null);
+      setGenerating(false);
     }
+  };
+
+  const handleDownload = (type: string) => {
+    if (!sessionId) return;
+    const a = document.createElement("a");
+    a.href = `${BASE_URL}/api/oscal/${sessionId}/${type}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const implemented = complianceScore?.implemented ?? 0;
@@ -112,9 +123,25 @@ const OscalTab = () => {
       )}
 
       {uniqueDocs.length === 0 ? (
-        <p className="text-[13px] text-muted-foreground italic">
-          OSCAL documents will be generated once the assessment is complete.
-        </p>
+        <div className="space-y-3">
+          <p className="text-[13px] text-muted-foreground italic">
+            {classification
+              ? "OSCAL documents haven't been generated yet for this session."
+              : "OSCAL documents will be generated once the assessment is complete."}
+          </p>
+          {classification && (
+            <div>
+              <button
+                onClick={handleGenerate}
+                disabled={generating}
+                className="h-8 px-3 text-[12px] font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {generating ? "Generating…" : "⚙ Generate OSCAL SSP"}
+              </button>
+              {genError && <p className="text-[12px] text-red-400 mt-1">{genError}</p>}
+            </div>
+          )}
+        </div>
       ) : (
         uniqueDocs.map((doc) => (
           <div
@@ -129,10 +156,9 @@ const OscalTab = () => {
             <div className="flex gap-2 mt-1">
               <button
                 onClick={() => handleDownload(doc.type)}
-                disabled={downloading === doc.type}
-                className="h-8 px-3 text-[12px] font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                className="h-8 px-3 text-[12px] font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               >
-                {downloading === doc.type ? "Generating…" : "⬇ Download"}
+                ⬇ Download
               </button>
             </div>
           </div>
