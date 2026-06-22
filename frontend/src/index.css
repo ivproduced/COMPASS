@@ -2,48 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * USWDS-inspired design tokens mapped to shadcn CSS variables.
+ * Color references:
+ *   Primary blue:   #005ea2  (USWDS blue-60v)
+ *   Ink (text):     #1b1b1b  (USWDS ink)
+ *   Base-lightest:  #f0f0f0  (USWDS base-lightest)
+ *   Base-light:     #dfe1e2  (USWDS base-light)
+ *   Base-dark:      #71767a  (USWDS base-dark)
+ *   Error:          #b50909  (USWDS red-warm-50v)
+ *   Header navy:    #112e51  (USWDS header primary)
+ */
 @layer base {
   :root {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 11%;
 
-    --card: 217 33% 17%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 97%;
+    --card-foreground: 0 0% 11%;
 
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 11%;
 
-    --primary: 217 91% 60%;
-    --primary-foreground: 210 40% 98%;
+    /* USWDS blue-60v #005ea2 */
+    --primary: 209 100% 32%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 210 40% 98%;
+    /* USWDS base-light #dfe1e2 */
+    --secondary: 200 5% 88%;
+    --secondary-foreground: 0 0% 20%;
 
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
+    /* USWDS base-lightest #f0f0f0 */
+    --muted: 0 0% 94%;
+    --muted-foreground: 207 4% 46%;
 
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 11%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    /* USWDS error/red-warm #b50909 */
+    --destructive: 0 91% 37%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 19% 35%;
-    --input: 215 19% 35%;
-    --ring: 217 91% 60%;
+    --border: 200 5% 88%;
+    --input: 200 5% 88%;
+    --ring: 209 100% 32%;
 
-    --radius: 0.5rem;
+    /* USWDS prefers flat, square corners — use 0.25rem */
+    --radius: 0.25rem;
 
-    --sidebar-background: 217 33% 17%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 215 19% 35%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 19% 35%;
-    --sidebar-ring: 217 91% 60%;
+    /* USWDS header navy #112e51 */
+    --header-bg: 215 64% 19%;
+    --header-fg: 0 0% 100%;
 
-    --font-sans: 'Inter', sans-serif;
+    --sidebar-background: 0 0% 97%;
+    --sidebar-foreground: 0 0% 11%;
+    --sidebar-primary: 209 100% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 0 0% 11%;
+    --sidebar-border: 200 5% 88%;
+    --sidebar-ring: 209 100% 32%;
+
+    --font-sans: 'Public Sans', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
   }
 }

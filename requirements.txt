@@ -9,6 +9,9 @@ google-cloud-storage>=2.16.0
 google-cloud-aiplatform>=1.57.0
 vertexai>=1.0.0
 
+# ---- OpenAI (optional — used when LLM_PROVIDER=openai) ------------------
+openai>=1.0.0
+
 # ---- FastAPI / ASGI ------------------------------------------------------
 fastapi>=0.111.0
 uvicorn[standard]>=0.29.0

@@ -2,20 +2,20 @@ import { useParams } from "react-router-dom";
 import TopNav from "@/components/TopNav";
 
 const donutSegments = [
-  { label: "Implemented", pct: 76, color: "#22C55E" },
-  { label: "Partial", pct: 17, color: "#F59E0B" },
-  { label: "Not Addressed", pct: 7, color: "#EF4444" },
+  { label: "Implemented", pct: 76, color: "#1a7f37" },
+  { label: "Partial", pct: 17, color: "#936f38" },
+  { label: "Not Addressed", pct: 7, color: "#b50909" },
 ];
 
 const controls = [
-  { id: "AC-1", name: "Policy & Procedures", status: "Implemented", statusColor: "#22C55E", notes: "All policies documented and approved." },
-  { id: "AC-2", name: "Account Management", status: "Implemented", statusColor: "#22C55E", notes: "Centralized IAM with MFA enforced." },
-  { id: "AC-3", name: "Access Enforcement", status: "Partial", statusColor: "#F59E0B", notes: "RBAC in place; attribute-based pending." },
-  { id: "AC-4", name: "Info Flow Enforcement", status: "Gap", statusColor: "#EF4444", notes: "No DLP controls on outbound flows." },
-  { id: "AC-5", name: "Separation of Duties", status: "Planned", statusColor: "#3B82F6", notes: "Scheduled for Q2 sprint." },
-  { id: "SC-7", name: "Boundary Protection", status: "Gap", statusColor: "#EF4444", notes: "No WAF in front of CloudFront." },
-  { id: "SC-8", name: "Transmission Confidentiality", status: "Implemented", statusColor: "#22C55E", notes: "TLS 1.3 enforced on all endpoints." },
-  { id: "SC-28", name: "Protection at Rest", status: "Planned", statusColor: "#3B82F6", notes: "KMS encryption rollout in progress." },
+  { id: "AC-1", name: "Policy & Procedures", status: "Implemented", statusColor: "#1a7f37", notes: "All policies documented and approved." },
+  { id: "AC-2", name: "Account Management", status: "Implemented", statusColor: "#1a7f37", notes: "Centralized IAM with MFA enforced." },
+  { id: "AC-3", name: "Access Enforcement", status: "Partial", statusColor: "#936f38", notes: "RBAC in place; attribute-based pending." },
+  { id: "AC-4", name: "Info Flow Enforcement", status: "Gap", statusColor: "#b50909", notes: "No DLP controls on outbound flows." },
+  { id: "AC-5", name: "Separation of Duties", status: "Planned", statusColor: "#005ea2", notes: "Scheduled for Q2 sprint." },
+  { id: "SC-7", name: "Boundary Protection", status: "Gap", statusColor: "#b50909", notes: "No WAF in front of CloudFront." },
+  { id: "SC-8", name: "Transmission Confidentiality", status: "Implemented", statusColor: "#1a7f37", notes: "TLS 1.3 enforced on all endpoints." },
+  { id: "SC-28", name: "Protection at Rest", status: "Planned", statusColor: "#005ea2", notes: "KMS encryption rollout in progress." },
 ];
 
 const gaps = [
@@ -25,7 +25,7 @@ const gaps = [
     issue: "No WAF identified in front of CloudFront CDN. Missing network boundary enforcement.",
     remediation: "Deploy AWS WAF with managed rule sets and configure rate limiting.",
     effort: "Weeks",
-    effortColor: "#F59E0B",
+    effortColor: "#936f38",
   },
   {
     controlId: "AC-4",
@@ -33,7 +33,7 @@ const gaps = [
     issue: "No payload inspection for sensitive data leakage on outbound flows.",
     remediation: "Implement AWS Macie for S3 scanning and VPC flow log anomaly detection.",
     effort: "Months",
-    effortColor: "#EF4444",
+    effortColor: "#b50909",
   },
   {
     controlId: "AC-4(4)",
@@ -41,7 +41,7 @@ const gaps = [
     issue: "No DLP controls identified for outbound data channels.",
     remediation: "Configure DLP policies in email gateway and S3 bucket policies.",
     effort: "Weeks",
-    effortColor: "#F59E0B",
+    effortColor: "#936f38",
   },
 ];
 
@@ -79,7 +79,7 @@ const DonutChart = () => {
   );
 };
 
-const cardClass = "bg-[#1E293B] border border-[#475569] rounded-lg p-6";
+const cardClass = "bg-card border border-border rounded-sm p-6";
 
 const Report = () => {
   const { id } = useParams<{ id: string }>();
@@ -93,7 +93,7 @@ const Report = () => {
           {/* Header */}
           <div>
             <h1 className="text-2xl font-bold text-foreground">Assessment Report</h1>
-            <p className="text-[14px] text-[#64748B] mt-1">Session {id ?? "unknown"}</p>
+            <p className="text-[14px] text-muted-foreground mt-1">Session {id ?? "unknown"}</p>
           </div>
 
           {/* Compliance Score */}
@@ -108,7 +108,7 @@ const Report = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="text-left text-[#64748B] border-b border-[#475569]">
+                  <tr className="text-left text-muted-foreground border-b border-border">
                     <th className="pb-2 pr-4 font-medium">Control ID</th>
                     <th className="pb-2 pr-4 font-medium">Name</th>
                     <th className="pb-2 pr-4 font-medium">Status</th>
@@ -117,7 +117,7 @@ const Report = () => {
                 </thead>
                 <tbody>
                   {controls.map((c) => (
-                    <tr key={c.id} className="border-b border-[#475569] last:border-b-0">
+                    <tr key={c.id} className="border-b border-border last:border-b-0">
                       <td className="py-2.5 pr-4 font-mono text-[12px] text-foreground">{c.id}</td>
                       <td className="py-2.5 pr-4 text-foreground">{c.name}</td>
                       <td className="py-2.5 pr-4">
@@ -126,7 +126,7 @@ const Report = () => {
                           {c.status}
                         </span>
                       </td>
-                      <td className="py-2.5 text-[#94A3B8]">{c.notes}</td>
+                      <td className="py-2.5 text-muted-foreground">{c.notes}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -143,10 +143,10 @@ const Report = () => {
                   <p className="text-[14px] font-semibold text-foreground">
                     <span className="font-mono text-[13px]">{g.controlId}</span> · {g.title}
                   </p>
-                  <p className="text-[13px] text-[#94A3B8] leading-relaxed">{g.issue}</p>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">{g.issue}</p>
                   <div>
                     <p className="text-[13px] font-semibold text-foreground">Remediation:</p>
-                    <p className="text-[13px] text-[#94A3B8]">{g.remediation}</p>
+                    <p className="text-[13px] text-muted-foreground">{g.remediation}</p>
                   </div>
                   <span className="inline-block text-[11px] font-medium px-2 py-0.5 rounded"
                     style={{ backgroundColor: g.effortColor + "22", color: g.effortColor }}>

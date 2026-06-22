@@ -1,15 +1,15 @@
 import { useSession } from "@/context/SessionContext";
 
 const IMPACT: Record<string, { color: string; pct: number }> = {
-  HIGH: { color: "#EF4444", pct: 80 },
-  MODERATE: { color: "#F59E0B", pct: 60 },
-  LOW: { color: "#22C55E", pct: 40 },
+  HIGH: { color: "#b50909", pct: 80 },
+  MODERATE: { color: "#936f38", pct: 60 },
+  LOW: { color: "#1a7f37", pct: 40 },
 };
 
 const LEVEL_COLOR: Record<string, string> = {
-  HIGH: "#EF4444",
-  MODERATE: "#F59E0B",
-  LOW: "#22C55E",
+  HIGH: "#b50909",
+  MODERATE: "#936f38",
+  LOW: "#1a7f37",
 };
 
 const ClassifyTab = () => {
@@ -35,7 +35,7 @@ const ClassifyTab = () => {
     rationale,
   } = classification;
   const lvl = (level ?? "").toUpperCase();
-  const levelColor = LEVEL_COLOR[lvl] ?? "#64748B";
+  const levelColor = LEVEL_COLOR[lvl] ?? "#71767a";
 
   const impactLevels = [
     { label: "Confidentiality", level: (confidentiality ?? "").toUpperCase() },
@@ -61,7 +61,7 @@ const ClassifyTab = () => {
         <h4 className="text-[13px] font-semibold text-foreground">Impact Levels</h4>
         <div className="space-y-3">
           {impactLevels.map((item) => {
-            const cfg = IMPACT[item.level] ?? { color: "#64748B", pct: 30 };
+            const cfg = IMPACT[item.level] ?? { color: "#71767a", pct: 30 };
             return (
               <div key={item.label} className="space-y-1">
                 <div className="flex justify-between text-[12px]">

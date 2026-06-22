@@ -17,9 +17,9 @@ const DonutChart = ({
   const pctLabel = Math.round(implemented * 100);
 
   const segments = [
-    { pct: implemented, color: "#22C55E", label: "Implemented" },
-    { pct: partial, color: "#F59E0B", label: "Partial" },
-    { pct: notAddressed, color: "#EF4444", label: "Not Addressed" },
+    { pct: implemented, color: "#1a7f37", label: "Implemented" },
+    { pct: partial, color: "#936f38", label: "Partial" },
+    { pct: notAddressed, color: "#b50909", label: "Not Addressed" },
   ];
 
   let offset = 0;
@@ -146,13 +146,13 @@ const OscalTab = () => {
         uniqueDocs.map((doc) => (
           <div
             key={doc.type}
-            className="bg-[#0F172A] border border-[#475569] rounded-lg p-4 space-y-2"
+            className="bg-card border border-border rounded-sm p-4 space-y-2"
           >
             <p className="text-[14px] font-semibold text-foreground">
               📄 {DOC_LABELS[doc.type] ?? doc.type.toUpperCase()}
             </p>
-            <p className="text-[12px] text-[#64748B]">OSCAL JSON v1.1.2</p>
-            <p className="text-[12px] font-medium text-[#22C55E]">✅ Generated</p>
+            <p className="text-[12px] text-muted-foreground">OSCAL JSON v1.1.2</p>
+            <p className="text-[12px] font-medium text-[#1a7f37]">✅ Generated</p>
             <div className="flex gap-2 mt-1">
               <button
                 onClick={() => handleDownload(doc.type)}

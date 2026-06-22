@@ -45,8 +45,10 @@ from google.genai import types
 from backend.agents.prompts import COMPASS_SYSTEM_PROMPT
 from backend.config import settings
 from backend.models.control_assessment import ComplianceScore
+from backend.providers import get_provider
 from backend.services.firestore_service import firestore_service
 from backend.services.storage_service import storage_service
+from backend.tools.definitions import TOOL_SCHEMAS
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -80,176 +82,16 @@ def _build_genai_client() -> genai.Client:
 
 genai_client = _build_genai_client()
 
+# Provider abstraction — used by sidecar and REST chat endpoint.
+# The Live WebSocket uses genai_client directly (native audio is Gemini-specific).
+llm_provider = get_provider()
+
 # ------------------------------------------------------------------
-# Live API config — built once, reused per session
+# Live API config — built once, reused per session (Gemini-specific)
 # ------------------------------------------------------------------
-# Tool declarations — used by the sidecar generate_content call.
-# gemini-2.5-flash-native-audio-latest only supports bidiGenerateContent (no
-# function calling in Live API), so tools are executed via a parallel
-# generate_content call after each completed user turn.
-TOOL_DECLARATIONS = [
-    types.FunctionDeclaration(
-        name="classify_system",
-        description="Classify a system using FIPS 199 based on data types processed.",
-        parameters=types.Schema(
-            type="OBJECT",
-            properties={
-                "data_types": types.Schema(
-                    type="ARRAY",
-                    items=types.Schema(type="STRING"),
-                    description=(
-                        "List of canonical data type tags. Use the most specific tag available. "
-                        "PHI subtypes: PHI_CLINICAL (EHR/patient records), PHI_MENTAL_HEALTH, "
-                        "PHI_SUBSTANCE_ABUSE, PHI_GENETIC, PHI_BILLING (insurance/billing), PHI_ADMIN. "
-                        "PII subtypes: PII, PII_SSN, PII_FINANCIAL, PII_BIOMETRIC, PII_LOCATION. "
-                        "Other: FTI, CJIS, CUI, CUI_CONTROLLED, CUI_EXPORT, FINANCIAL, PAYMENT_CARD, "
-                        "AUTH_CREDENTIALS, CRYPTOGRAPHIC_KEYS, TRADE_SECRET, PUBLIC, INTERNAL."
-                    ),
-                ),
-                "system_description": types.Schema(
-                    type="STRING",
-                    description="Optional system description",
-                ),
-                "confidentiality_override": types.Schema(
-                    type="STRING",
-                    description=(
-                        "Explicit confidentiality impact level stated by the user: 'low', 'moderate', or 'high'. "
-                        "Only set if the user has clearly stated a specific confidentiality level. "
-                        "Overrides the data-type high-water-mark for this dimension."
-                    ),
-                ),
-                "integrity_override": types.Schema(
-                    type="STRING",
-                    description=(
-                        "Explicit integrity impact level stated by the user: 'low', 'moderate', or 'high'. "
-                        "Only set if the user has clearly stated a specific integrity level."
-                    ),
-                ),
-                "availability_override": types.Schema(
-                    type="STRING",
-                    description=(
-                        "Explicit availability impact level stated by the user: 'low', 'moderate', or 'high'. "
-                        "Only set if the user has clearly stated a specific availability level. "
-                        "Example: if user says 'availability can be moderate', pass 'moderate'."
-                    ),
-                ),
-            },
-            required=["data_types"],
-        ),
-    ),
-    types.FunctionDeclaration(
-        name="map_data_types",
-        description=(
-            "Map free-text data type descriptions to canonical tags and C/I/A impact levels. "
-            "Pass the most specific phrase possible so the right tag is chosen. "
-            "PHI subtypes: 'medical records'→PHI_CLINICAL, 'mental health records'→PHI_MENTAL_HEALTH, "
-            "'substance abuse records'→PHI_SUBSTANCE_ABUSE, 'genetic data'→PHI_GENETIC, "
-            "'medical billing'→PHI_BILLING, 'health care administration'→PHI_ADMIN. "
-            "Other examples: 'electronic health records'→PHI_CLINICAL, 'EHR'→PHI_CLINICAL, "
-            "'ssn'→PII_SSN, 'credit card data'→PAYMENT_CARD, 'encryption keys'→CRYPTOGRAPHIC_KEYS, "
-            "'criminal justice information'→CJIS, 'federal tax information'→FTI."
-        ),
-        parameters=types.Schema(
-            type="OBJECT",
-            properties={
-                "descriptions": types.Schema(
-                    type="ARRAY",
-                    items=types.Schema(type="STRING"),
-                    description="List of specific data type phrases, one per item",
-                )
-            },
-            required=["descriptions"],
-        ),
-    ),
-    types.FunctionDeclaration(
-        name="search_controls",
-        description="Semantic search over NIST 800-53 controls for a component or requirement.",
-        parameters=types.Schema(
-            type="OBJECT",
-            properties={
-                "query": types.Schema(
-                    type="STRING",
-                    description="Component or requirement to map to controls",
-                ),
-                "family_filter": types.Schema(
-                    type="STRING",
-                    description="Optional: restrict to a control family (AC, SC, AU…)",
-                ),
-            },
-            required=["query"],
-        ),
-    ),
-    types.FunctionDeclaration(
-        name="control_lookup",
-        description="Look up a specific NIST 800-53 control by ID.",
-        parameters=types.Schema(
-            type="OBJECT",
-            properties={
-                "control_id": types.Schema(
-                    type="STRING",
-                    description="Control ID (e.g. AC-4, SC-7(3))",
-                ),
-                "keyword": types.Schema(
-                    type="STRING",
-                    description="Keyword to search by title or description",
-                ),
-            },
-        ),
-    ),
-    types.FunctionDeclaration(
-        name="gap_analysis",
-        description="Analyze a compliance gap for a specific control.",
-        parameters=types.Schema(
-            type="OBJECT",
-            properties={
-                "control_id": types.Schema(type="STRING"),
-                "current_implementation": types.Schema(
-                    type="STRING",
-                    description=(
-                        "CRITICAL: Quote the user's EXACT words about this control's implementation. "
-                        "Do NOT paraphrase, summarize, or rewrite. If the user said it is NOT implemented, "
-                        "missing, absent, or not in place, those exact words MUST appear here. "
-                        "Examples: 'MFA is NOT implemented', 'we have no logging', "
-                        "'encryption is not configured', 'we don't have this in place'. "
-                        "The gap scoring engine reads this field literally — paraphrasing breaks detection."
-                    ),
-                ),
-                "required_implementation": types.Schema(type="STRING"),
-                "component": types.Schema(type="STRING"),
-            },
-            required=["control_id", "current_implementation"],
-        ),
-    ),
-    types.FunctionDeclaration(
-        name="generate_oscal",
-        description="Generate OSCAL-formatted SSP or POA&M from session assessment data.",
-        parameters=types.Schema(
-            type="OBJECT",
-            properties={
-                "document_type": types.Schema(
-                    type="STRING",
-                    enum=["ssp", "poam", "assessment_results"],
-                ),
-                "system_name": types.Schema(type="STRING"),
-                "system_description": types.Schema(type="STRING"),
-                "fips_199_level": types.Schema(type="STRING"),
-            },
-            required=["document_type"],
-        ),
-    ),
-    types.FunctionDeclaration(
-        name="threat_lookup",
-        description="Query MITRE ATLAS AI/ML threat mappings to find mitigating controls.",
-        parameters=types.Schema(
-            type="OBJECT",
-            properties={
-                "query": types.Schema(type="STRING"),
-                "technique_id": types.Schema(type="STRING"),
-                "tactic": types.Schema(type="STRING"),
-            },
-        ),
-    ),
-]
+# Tools intentionally omitted — native-audio Live API models only
+# support bidiGenerateContent (no function calling). Tools run via the
+# sidecar llm_provider.force_tool_call() after each completed user turn.
 
 LIVE_CONFIG = types.LiveConnectConfig(
     response_modalities=["AUDIO"],
@@ -288,22 +130,19 @@ LIVE_CONFIG = types.LiveConnectConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     logger.info(
-        "COMPASS backend starting (project=%s, model=%s)",
-        settings.google_cloud_project,
-        settings.gemini_model,
+        "COMPASS backend starting (provider=%s, model=%s)",
+        llm_provider.provider_name,
+        llm_provider.model_name,
     )
-    # Validate Gemini connectivity at startup
     try:
-        await genai_client.aio.models.generate_content(
-            model=settings.gemini_model,
-            contents="Respond with OK.",
-            config=types.GenerateContentConfig(
-                max_output_tokens=5,
-            ),
+        await llm_provider.simple_generate("Respond with OK.")
+        logger.info(
+            "LLM provider connected ✓  (provider=%s, model=%s)",
+            llm_provider.provider_name,
+            llm_provider.model_name,
         )
-        logger.info("Gemini API connected ✓  (model=%s)", settings.gemini_model)
     except Exception as exc:
-        logger.error("Gemini API connection FAILED at startup: %s", exc)
+        logger.error("LLM provider connection FAILED at startup: %s", exc)
         # Don't crash — the app can still serve health checks and REST reads
     yield
     logger.info("COMPASS backend shutting down")
@@ -683,48 +522,28 @@ what the user said. NEVER paraphrase or summarize it. If the user said a control
 implemented, not in place, missing, absent, or not configured, copy those exact words.
 Example: user says "MFA is NOT implemented" → current_implementation="MFA is NOT implemented"."""
 
-        response = await genai_client.aio.models.generate_content(
-            model=settings.gemini_model,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                tools=[types.Tool(function_declarations=TOOL_DECLARATIONS)],
-                tool_config=types.ToolConfig(
-                    function_calling_config=types.FunctionCallingConfig(
-                        mode="ANY",
-                        allowed_function_names=allowed_tools,
-                    )
-                ),
-            ),
-        )
-
         logger.info("Sidecar allowed_tools=%s, num_controls=%d, has_cls=%s",
                     allowed_tools, num_controls, bool(cls))
 
-        for candidate in response.candidates or []:
-            for part in (candidate.content.parts or []) if candidate.content else []:
-                if hasattr(part, "function_call") and part.function_call:
-                    fn_name = part.function_call.name
-                    fn_args = dict(part.function_call.args) if part.function_call.args else {}
-                    logger.info("Sidecar tool: %s(%s)", fn_name, list(fn_args.keys()))
-                    result = await execute_tool(fn_name, fn_args, session_id)
-                    logger.info("Sidecar result keys: %s, is_gap=%s, count=%s",
-                                list(result.keys())[:8],
-                                result.get("is_gap"),
-                                result.get("count"))
-                    event = result.pop("_event", None)
-                    if event:
-                        try:
-                            await websocket.send_text(json.dumps(event))
-                            if phase := _PHASE_MAP.get(event.get("type", "")):
-                                await websocket.send_text(json.dumps({
-                                    "type": "phase_change",
-                                    "phase": phase,
-                                }))
-                        except Exception:
-                            pass  # WS may already be closed
-
-                    # Context injection removed: send_client_content on a live
-                    # session causes concurrent gRPC write conflicts → 1011 crashes.
+        tool_calls = await llm_provider.force_tool_call(prompt, TOOL_SCHEMAS, allowed_tools)
+        for tc in tool_calls:
+            logger.info("Sidecar tool: %s(%s)", tc.name, list(tc.args.keys()))
+            result = await execute_tool(tc.name, tc.args, session_id)
+            logger.info("Sidecar result keys: %s, is_gap=%s, count=%s",
+                        list(result.keys())[:8],
+                        result.get("is_gap"),
+                        result.get("count"))
+            event = result.pop("_event", None)
+            if event:
+                try:
+                    await websocket.send_text(json.dumps(event))
+                    if phase := _PHASE_MAP.get(event.get("type", "")):
+                        await websocket.send_text(json.dumps({
+                            "type": "phase_change",
+                            "phase": phase,
+                        }))
+                except Exception:
+                    pass  # WS may already be closed
     except Exception as exc:
         logger.error("Sidecar tool analysis failed: %s", exc)
 
@@ -1097,25 +916,20 @@ async def health_check():
     return {"status": "ok", "service": "compass-backend", "version": "1.0.0"}
 
 
-@app.get("/health/gemini")
-async def gemini_health_check():
-    """Verify Gemini API is reachable and responding."""
+@app.get("/health/llm")
+async def llm_health_check():
+    """Verify the configured LLM provider is reachable and responding."""
     try:
-        response = await genai_client.aio.models.generate_content(
-            model=settings.gemini_model,
-            contents="Respond with the single word: OK",
-            config=types.GenerateContentConfig(max_output_tokens=5),
-        )
-        text = (response.text or "").strip()
+        text = await llm_provider.simple_generate("Respond with the single word: OK")
         return {
             "status": "ok",
-            "model": settings.gemini_model,
-            "mode": "api_key" if (settings.google_api_key and not settings.gemini_use_vertex) else "vertex_ai",
+            "provider": llm_provider.provider_name,
+            "model": llm_provider.model_name,
             "response": text,
         }
     except Exception as exc:
-        logger.error("Gemini health check failed: %s", exc)
-        raise HTTPException(status_code=503, detail=f"Gemini API unreachable: {exc}")
+        logger.error("LLM health check failed: %s", exc)
+        raise HTTPException(status_code=503, detail=f"LLM provider unreachable: {exc}")
 
 
 @app.get("/api/sessions")
@@ -1293,84 +1107,26 @@ async def text_chat(session_id: str, body: dict):
 
     # Build conversation context from recent transcript
     transcript = await firestore_service.get_transcript(session_id, limit=20)
-    history_contents: list[types.Content] = []
-    for entry in transcript[:-1]:  # exclude the one we just added
-        role = "model" if entry.get("speaker") == "compass" else "user"
-        history_contents.append(
-            types.Content(role=role, parts=[types.Part(text=entry.get("text", ""))])
-        )
-    history_contents.append(
-        types.Content(role="user", parts=[types.Part(text=user_message)])
-    )
+    history: list[dict] = []
+    for entry in transcript[:-1]:  # exclude the message we just added
+        role = "assistant" if entry.get("speaker") == "compass" else "user"
+        history.append({"role": role, "content": entry.get("text", "")})
+    history.append({"role": "user", "content": user_message})
 
-    # Call Gemini with tool declarations (same schema as Live API)
-    tool_config = types.Tool(
-        function_declarations=TOOL_DECLARATIONS
-    )
-    response = await genai_client.aio.models.generate_content(
-        model=settings.gemini_model,
-        contents=history_contents,
-        config=types.GenerateContentConfig(
-            system_instruction=COMPASS_SYSTEM_PROMPT,
-            tools=[tool_config],
-        ),
-    )
+    async def _executor(fn_name: str, fn_args: dict) -> dict:
+        return await execute_tool(fn_name, fn_args, session_id)
 
     events: list[dict] = []
-    reply_parts: list[str] = []
 
-    # Process response — may contain text + function calls
-    MAX_TOOL_ROUNDS = 5
-    for _round in range(MAX_TOOL_ROUNDS):
-        for candidate in response.candidates or []:
-            for part in candidate.content.parts or []:
-                if part.text:
-                    reply_parts.append(part.text)
-                if part.function_call:
-                    fn_name = part.function_call.name
-                    fn_args = dict(part.function_call.args) if part.function_call.args else {}
-                    logger.info("Chat tool call: %s(%s)", fn_name, list(fn_args.keys()))
-                    result = await execute_tool(fn_name, fn_args, session_id)
-                    event = result.pop("_event", None)
-                    if event:
-                        events.append(event)
+    # Multi-turn agentic chat via the configured LLM provider
+    reply_text, chat_events = await llm_provider.chat_with_tools(
+        system_prompt=COMPASS_SYSTEM_PROMPT,
+        history=history,
+        tools=TOOL_SCHEMAS,
+        tool_executor=_executor,
+    )
+    events.extend(chat_events)
 
-                    # Send tool result back to Gemini for follow-up
-                    history_contents.append(candidate.content)
-                    history_contents.append(
-                        types.Content(
-                            role="user",
-                            parts=[
-                                types.Part(
-                                    function_response=types.FunctionResponse(
-                                        name=fn_name,
-                                        response={"result": result},
-                                    )
-                                )
-                            ],
-                        )
-                    )
-
-        # Check if there are pending function calls that need another round
-        has_fn_calls = any(
-            part.function_call
-            for candidate in (response.candidates or [])
-            for part in (candidate.content.parts or [])
-        )
-        if not has_fn_calls:
-            break
-
-        # Continue the conversation with tool results
-        response = await genai_client.aio.models.generate_content(
-            model=settings.gemini_model,
-            contents=history_contents,
-            config=types.GenerateContentConfig(
-                system_instruction=COMPASS_SYSTEM_PROMPT,
-                tools=[tool_config],
-            ),
-        )
-
-    reply_text = " ".join(reply_parts).strip()
     if reply_text:
         await firestore_service.add_transcript_entry(session_id, {
             "speaker": "compass",
@@ -1378,10 +1134,10 @@ async def text_chat(session_id: str, body: dict):
         })
 
     # ── Sidecar tool orchestration ──────────────────────────────────────────
-    # COMPASS system prompt produces conversational responses; Gemini often
-    # reasons about classification without calling the tool.  Run a separate
-    # orchestrator call that FORCES a function call (mode=ANY) so assessment
-    # data is always written to Firestore after each user turn.
+    # COMPASS system prompt produces conversational responses; the model often
+    # reasons about classification without calling the tool.  Force a tool call
+    # (tool_choice=required / mode=ANY) so assessment data is always written to
+    # Firestore after each meaningful user turn.
     if len(user_message) >= 20:
         try:
             session_now = await firestore_service.get_session(session_id) or {}
@@ -1412,31 +1168,17 @@ async def text_chat(session_id: str, body: dict):
                 "You MUST call one of the available tools to advance the compliance assessment. "
                 "Choose the single most appropriate tool based on the conversation above."
             )
-            orch_resp = await genai_client.aio.models.generate_content(
-                model=settings.gemini_model,
-                contents=orch_prompt,
-                config=types.GenerateContentConfig(
-                    tools=[types.Tool(function_declarations=TOOL_DECLARATIONS)],
-                    tool_config=types.ToolConfig(
-                        function_calling_config=types.FunctionCallingConfig(
-                            mode="ANY",
-                            allowed_function_names=allowed_now,
-                        )
-                    ),
-                ),
+            orch_tool_calls = await llm_provider.force_tool_call(
+                orch_prompt, TOOL_SCHEMAS, allowed_now
             )
-            for cand in orch_resp.candidates or []:
-                for part in (cand.content.parts or []) if cand.content else []:
-                    if hasattr(part, "function_call") and part.function_call:
-                        fn = part.function_call.name
-                        fa = dict(part.function_call.args) if part.function_call.args else {}
-                        logger.info("Text-chat sidecar tool: %s(%s)", fn, list(fa.keys()))
-                        tool_result = await execute_tool(fn, fa, session_id)
-                        ev = tool_result.pop("_event", None)
-                        if ev:
-                            events.append(ev)
-                            if phase_key := _PHASE_MAP.get(ev.get("type", "")):
-                                events.append({"type": "phase_change", "phase": phase_key})
+            for tc in orch_tool_calls:
+                logger.info("Text-chat sidecar tool: %s(%s)", tc.name, list(tc.args.keys()))
+                tool_result = await execute_tool(tc.name, tc.args, session_id)
+                ev = tool_result.pop("_event", None)
+                if ev:
+                    events.append(ev)
+                    if phase_key := _PHASE_MAP.get(ev.get("type", "")):
+                        events.append({"type": "phase_change", "phase": phase_key})
         except Exception as orch_exc:
             logger.error("Text-chat sidecar analysis failed: %s", orch_exc)
 
