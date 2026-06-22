@@ -81,6 +81,25 @@ class Settings(BaseSettings):
     oscal_version: str = "1.1.2"
     oscal_min_coverage_for_ssp: float = 0.80  # 80 % controls mapped before SSP gen
 
+    # -------------------------------------------------------------------
+    # Security (OWASP LLM Top 10 / Agentic Top 10 hardening)
+    # -------------------------------------------------------------------
+    # LLM10 / Agentic resource-exhaustion guards
+    max_diagram_size_mb: int = 10
+    max_sessions_per_user: int = 20
+    max_transcript_limit: int = 100
+
+    # Rate limiting (requests per window per client IP)
+    rate_limit_websocket: int = 10       # WS connections / 60 s
+    rate_limit_chat: int = 30            # chat requests  / 60 s
+    rate_limit_session_create: int = 5   # new sessions   / 60 s
+    rate_limit_diagram_upload: int = 10  # uploads        / 60 s
+    rate_limit_default: int = 60         # all other       / 60 s
+
+    # LLM06 / Agentic excessive-agency guards
+    require_session_ownership_check: bool = True
+    tool_execution_timeout_seconds: int = 30
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
