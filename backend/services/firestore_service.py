@@ -70,16 +70,12 @@ class FirestoreService:
         """
         Verify that *user_id* owns the session identified by *session_id*.
         Returns True only when the stored userId matches the caller.
-        Always returns True when user_id is "anonymous" so that unauthenticated
-        single-user development flows are unaffected; replace this with proper
-        JWT-based auth in production.
+        Anonymous users are allowed access only when the session was
+        created anonymously (userId == "anonymous") so that single-user
+        development flows still work without requiring auth.
         """
         if not session_id:
             return False
-        # Allow anonymous user unconditionally (development / demo mode).
-        # In production, remove this bypass once Firebase Auth is fully wired.
-        if user_id == "anonymous":
-            return True
         session = await self.get_session(session_id)
         if session is None:
             return False

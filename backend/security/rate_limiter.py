@@ -16,6 +16,8 @@ import time
 from collections import defaultdict, deque
 from dataclasses import dataclass
 
+from backend.config import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -25,21 +27,35 @@ class RateLimitRule:
     window_seconds: int
 
 
+def _build_rate_limit_rules() -> dict[str, RateLimitRule]:
+    return {
+        "websocket": RateLimitRule(
+            max_requests=settings.rate_limit_websocket,
+            window_seconds=60,
+        ),
+        "chat": RateLimitRule(
+            max_requests=settings.rate_limit_chat,
+            window_seconds=60,
+        ),
+        "session_create": RateLimitRule(
+            max_requests=settings.rate_limit_session_create,
+            window_seconds=60,
+        ),
+        "diagram_upload": RateLimitRule(
+            max_requests=settings.rate_limit_diagram_upload,
+            window_seconds=60,
+        ),
+        "default": RateLimitRule(
+            max_requests=settings.rate_limit_default,
+            window_seconds=60,
+        ),
+    }
+
+
 # ---------------------------------------------------------------------------
 # Per-category rules
 # ---------------------------------------------------------------------------
-RATE_LIMIT_RULES: dict[str, RateLimitRule] = {
-    # WebSocket connections  — prevents session flood
-    "websocket":       RateLimitRule(max_requests=10, window_seconds=60),
-    # Text chat requests     — LLM call is expensive
-    "chat":            RateLimitRule(max_requests=30, window_seconds=60),
-    # Session creation       — prevents Firestore data spam
-    "session_create":  RateLimitRule(max_requests=5,  window_seconds=60),
-    # Diagram uploads        — GCS write + Gemini Vision call
-    "diagram_upload":  RateLimitRule(max_requests=10, window_seconds=60),
-    # Assessment reads       — cheap Firestore reads
-    "default":         RateLimitRule(max_requests=60, window_seconds=60),
-}
+RATE_LIMIT_RULES: dict[str, RateLimitRule] = _build_rate_limit_rules()
 
 
 class InMemoryRateLimiter:

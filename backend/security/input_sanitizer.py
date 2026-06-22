@@ -204,4 +204,6 @@ def validate_gcs_path(gcs_path: str) -> str:
         raise InputValidationError("Invalid GCS path format")
     if not _ALLOWED_GCS_BUCKET_RE.match(gcs_path):
         raise InputValidationError("GCS path references an unauthorised location")
+    if ".." in gcs_path:
+        raise InputValidationError("GCS path contains invalid traversal segments")
     return gcs_path
