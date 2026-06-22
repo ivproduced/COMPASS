@@ -66,6 +66,25 @@ class FirestoreService:
         doc = await db.collection(_COL_SESSIONS).document(session_id).get()
         return doc.to_dict() if doc.exists else None
 
+    async def verify_session_ownership(self, session_id: str, user_id: str) -> bool:
+        """
+        Verify that *user_id* owns the session identified by *session_id*.
+        Returns True only when the stored userId matches the caller.
+        Always returns True when user_id is "anonymous" so that unauthenticated
+        single-user development flows are unaffected; replace this with proper
+        JWT-based auth in production.
+        """
+        if not session_id:
+            return False
+        # Allow anonymous user unconditionally (development / demo mode).
+        # In production, remove this bypass once Firebase Auth is fully wired.
+        if user_id == "anonymous":
+            return True
+        session = await self.get_session(session_id)
+        if session is None:
+            return False
+        return session.get("userId") == user_id
+
     async def update_session(self, session_id: str, updates: dict[str, Any]) -> None:
         db = self._get_client()
         updates["updatedAt"] = _utcnow()
