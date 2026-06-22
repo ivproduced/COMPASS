@@ -830,10 +830,10 @@ Example: user says "MFA is NOT implemented" → current_implementation="MFA is N
                     fn_args = dict(part.function_call.args) if part.function_call.args else {}
                     logger.info("Sidecar tool: %s(%s)", fn_name, list(fn_args.keys()))
                     result = await execute_tool(fn_name, fn_args, session_id)
-                    logger.info("Sidecar result keys: %s, is_gap=%s, count=%s",
-                                list(result.keys())[:8],
-                                result.get("is_gap"),
-                                result.get("count"))
+                    logger.info("Sidecar result: %d keys, is_gap=%s, count=%s",
+                                len(result),
+                                bool(result.get("is_gap")),
+                                int(result.get("count") or 0))
                     event = result.pop("_event", None)
                     if event:
                         try:
