@@ -11,16 +11,20 @@
 #   6. (Optional) Deploys to Cloud Run
 #
 # Usage:
-#   chmod +x setup-gcp.sh
-#   ./setup-gcp.sh                    # Full setup
-#   ./setup-gcp.sh --deploy           # Setup + build + deploy
-#   ./setup-gcp.sh --status           # Check what exists
+#   chmod +x scripts/setup-gcp.sh
+#   ./scripts/setup-gcp.sh                    # Full setup
+#   ./scripts/setup-gcp.sh --deploy           # Setup + build + deploy
+#   ./scripts/setup-gcp.sh --status           # Check what exists
 #
 # Prerequisites:
 #   - gcloud CLI installed and authenticated
 #   - A GCP project created (or use the default below)
 # ============================================================
 set -euo pipefail
+
+# Run from the repository root so Cloud Build uses the correct build context
+# (Dockerfile, requirements.txt, backend/) regardless of where this is invoked.
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
 # ---- Configuration (edit these or set via environment) ----
 PROJECT_ID="${GOOGLE_CLOUD_PROJECT:-compass-fedramp}"
@@ -397,10 +401,10 @@ case "${1:-}" in
         echo "      python -m uvicorn backend.app:app --reload --port 8080"
         echo ""
         echo "   4. Deploy when ready:"
-        echo "      ./setup-gcp.sh --deploy"
+        echo "      ./scripts/setup-gcp.sh --deploy"
         echo ""
         echo "   5. Check status anytime:"
-        echo "      ./setup-gcp.sh --status"
+        echo "      ./scripts/setup-gcp.sh --status"
         echo ""
         ;;
 esac
