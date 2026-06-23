@@ -46,9 +46,7 @@ from google.genai import types
 from backend.agents.prompts import COMPASS_SYSTEM_PROMPT
 from backend.config import settings
 from backend.models.control_assessment import ComplianceScore
-<<<<<<< HEAD
 from backend.providers import get_provider
-=======
 from backend.security import (
     AuditEventType,
     InputValidationError,
@@ -61,7 +59,6 @@ from backend.security import (
     validate_diagram_upload,
     validate_gcs_path,
 )
->>>>>>> origin/main
 from backend.services.firestore_service import firestore_service
 from backend.services.storage_service import storage_service
 from backend.tools.definitions import TOOL_SCHEMAS
@@ -661,7 +658,6 @@ Example: user says "MFA is NOT implemented" → current_implementation="MFA is N
         logger.info("Sidecar allowed_tools=%s, num_controls=%d, has_cls=%s",
                     allowed_tools, num_controls, bool(cls))
 
-<<<<<<< HEAD
         tool_calls = await llm_provider.force_tool_call(prompt, TOOL_SCHEMAS, allowed_tools)
         for tc in tool_calls:
             logger.info("Sidecar tool: %s(%s)", tc.name, list(tc.args.keys()))
@@ -670,6 +666,7 @@ Example: user says "MFA is NOT implemented" → current_implementation="MFA is N
                         "redacted",
                         "redacted",
                         "redacted")
+            event = result.pop("_event", None)
             if event:
                 try:
                     await websocket.send_text(json.dumps(event))
@@ -680,33 +677,6 @@ Example: user says "MFA is NOT implemented" → current_implementation="MFA is N
                         }))
                 except Exception:
                     pass  # WS may already be closed
-=======
-        for candidate in response.candidates or []:
-            for part in (candidate.content.parts or []) if candidate.content else []:
-                if hasattr(part, "function_call") and part.function_call:
-                    fn_name = part.function_call.name
-                    fn_args = dict(part.function_call.args) if part.function_call.args else {}
-                    logger.info("Sidecar tool: %s(%s)", fn_name, list(fn_args.keys()))
-                    result = await execute_tool(fn_name, fn_args, session_id)
-                    logger.info("Sidecar result: %d keys, is_gap=%s, count=%s",
-                                len(result),
-                                bool(result.get("is_gap")),
-                                int(result.get("count") or 0))
-                    event = result.pop("_event", None)
-                    if event:
-                        try:
-                            await websocket.send_text(json.dumps(event))
-                            if phase := _PHASE_MAP.get(event.get("type", "")):
-                                await websocket.send_text(json.dumps({
-                                    "type": "phase_change",
-                                    "phase": phase,
-                                }))
-                        except Exception:
-                            pass  # WS may already be closed
-
-                    # Context injection removed: send_client_content on a live
-                    # session causes concurrent gRPC write conflicts → 1011 crashes.
->>>>>>> origin/main
     except Exception as exc:
         logger.error("Sidecar tool analysis failed: %s", exc)
 
@@ -1480,28 +1450,15 @@ async def text_chat(request: Request, session_id: str, body: dict):
     })
 
     # Build conversation context from recent transcript
-<<<<<<< HEAD
-    transcript = await firestore_service.get_transcript(session_id, limit=20)
+    transcript = await firestore_service.get_transcript(clean_sid, limit=20)
     history: list[dict] = []
     for entry in transcript[:-1]:  # exclude the message we just added
         role = "assistant" if entry.get("speaker") == "compass" else "user"
         history.append({"role": role, "content": entry.get("text", "")})
     history.append({"role": "user", "content": user_message})
-=======
-    transcript = await firestore_service.get_transcript(clean_sid, limit=20)
-    history_contents: list[types.Content] = []
-    for entry in transcript[:-1]:  # exclude the one we just added
-        role = "model" if entry.get("speaker") == "compass" else "user"
-        history_contents.append(
-            types.Content(role=role, parts=[types.Part(text=entry.get("text", ""))])
-        )
-    history_contents.append(
-        types.Content(role="user", parts=[types.Part(text=user_message)])
-    )
->>>>>>> origin/main
 
     async def _executor(fn_name: str, fn_args: dict) -> dict:
-        return await execute_tool(fn_name, fn_args, session_id)
+        return await execute_tool(fn_name, fn_args, clean_sid)
 
     events: list[dict] = []
 
@@ -1562,29 +1519,14 @@ async def text_chat(request: Request, session_id: str, body: dict):
             orch_tool_calls = await llm_provider.force_tool_call(
                 orch_prompt, TOOL_SCHEMAS, allowed_now
             )
-<<<<<<< HEAD
             for tc in orch_tool_calls:
                 logger.info("Text-chat sidecar tool: %s(%s)", tc.name, list(tc.args.keys()))
-                tool_result = await execute_tool(tc.name, tc.args, session_id)
+                tool_result = await execute_tool(tc.name, tc.args, clean_sid)
                 ev = tool_result.pop("_event", None)
                 if ev:
                     events.append(ev)
                     if phase_key := _PHASE_MAP.get(ev.get("type", "")):
                         events.append({"type": "phase_change", "phase": phase_key})
-=======
-            for cand in orch_resp.candidates or []:
-                for part in (cand.content.parts or []) if cand.content else []:
-                    if hasattr(part, "function_call") and part.function_call:
-                        fn = part.function_call.name
-                        fa = dict(part.function_call.args) if part.function_call.args else {}
-                        logger.info("Text-chat sidecar tool: %s(%s)", fn, list(fa.keys()))
-                        tool_result = await execute_tool(fn, fa, clean_sid)
-                        ev = tool_result.pop("_event", None)
-                        if ev:
-                            events.append(ev)
-                            if phase_key := _PHASE_MAP.get(ev.get("type", "")):
-                                events.append({"type": "phase_change", "phase": phase_key})
->>>>>>> origin/main
         except Exception as orch_exc:
             logger.error("Text-chat sidecar analysis failed: %s", orch_exc)
 
