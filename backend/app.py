@@ -80,10 +80,20 @@ def _build_genai_client() -> genai.Client:
     )
 
 
-genai_client = _build_genai_client()
+# Lazily constructed — only used by /ws/live (Gemini-specific).
+# OpenAI-only deployments never need GCP credentials.
+_genai_client: genai.Client | None = None
+
+
+def _get_genai_client() -> genai.Client:
+    """Return the shared Gemini client, constructing it on first use."""
+    global _genai_client
+    if _genai_client is None:
+        _genai_client = _build_genai_client()
+    return _genai_client
 
 # Provider abstraction — used by sidecar and REST chat endpoint.
-# The Live WebSocket uses genai_client directly (native audio is Gemini-specific).
+# The Live WebSocket uses _get_genai_client() directly (native audio is Gemini-specific).
 llm_provider = get_provider()
 
 # ------------------------------------------------------------------
@@ -638,7 +648,7 @@ async def live_session(websocket: WebSocket):
         }))
         logger.info("Live session started: %s", session_id)
 
-        async with genai_client.aio.live.connect(
+        async with _get_genai_client().aio.live.connect(
             model=settings.gemini_live_model,
             config=LIVE_CONFIG,
         ) as gemini_session:
