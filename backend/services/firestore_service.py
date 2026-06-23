@@ -66,6 +66,21 @@ class FirestoreService:
         doc = await db.collection(_COL_SESSIONS).document(session_id).get()
         return doc.to_dict() if doc.exists else None
 
+    async def verify_session_ownership(self, session_id: str, user_id: str) -> bool:
+        """
+        Verify that *user_id* owns the session identified by *session_id*.
+        Returns True only when the stored userId matches the caller.
+        Anonymous users are allowed access only when the session was
+        created anonymously (userId == "anonymous") so that single-user
+        development flows still work without requiring auth.
+        """
+        if not session_id:
+            return False
+        session = await self.get_session(session_id)
+        if session is None:
+            return False
+        return session.get("userId") == user_id
+
     async def update_session(self, session_id: str, updates: dict[str, Any]) -> None:
         db = self._get_client()
         updates["updatedAt"] = _utcnow()
