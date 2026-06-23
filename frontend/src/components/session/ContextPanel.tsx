@@ -21,7 +21,7 @@ const ContextPanel = () => {
             className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
               t === activeTab
                 ? "text-foreground after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary shadow-[0_2px_6px_-2px_hsl(var(--primary)/0.4)]"
-                : "text-[#64748B] hover:text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {t}

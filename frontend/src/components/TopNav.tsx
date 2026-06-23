@@ -28,11 +28,14 @@ const TopNav = ({ pageTitle, editable = false, sessionId }: TopNavProps) => {
   };
 
   return (
-    <nav className="h-14 w-full bg-card border-b border-border flex items-center justify-between px-4 shrink-0">
+    <nav
+      className="h-14 w-full flex items-center justify-between px-4 shrink-0"
+      style={{ backgroundColor: "hsl(var(--header-bg))", color: "hsl(var(--header-fg))" }}
+    >
       {/* Left: Wordmark */}
-      <button onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer">
-        <Compass className="h-5 w-5 text-primary" />
-        <span className="text-foreground font-semibold text-base tracking-tight">
+      <button type="button" onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer">
+        <Compass className="h-5 w-5 text-white" />
+        <span className="text-white font-semibold text-base tracking-tight">
           COMPASS
         </span>
       </button>
@@ -42,26 +45,25 @@ const TopNav = ({ pageTitle, editable = false, sessionId }: TopNavProps) => {
         {editable ? (
           <input
             defaultValue={pageTitle}
-            className="bg-transparent text-foreground text-sm font-medium text-center border-b border-transparent hover:border-border focus:border-primary focus:outline-none transition-colors px-2 py-1"
+            className="bg-transparent text-white text-sm font-medium text-center border-b border-transparent hover:border-white/40 focus:border-white focus:outline-none transition-colors px-2 py-1"
           />
         ) : (
-          <span className="text-foreground text-sm font-medium">{pageTitle}</span>
+          <span className="text-white text-sm font-medium">{pageTitle}</span>
         )}
       </div>
 
-      {/* Right: Export + Avatar */}
+      {/* Right: Export */}
       <div className="flex items-center gap-3">
         <Button
           variant="outline"
           size="sm"
-          className="gap-1.5 text-muted-foreground"
+          className="gap-1.5 border-white/30 text-white hover:bg-white/10 hover:text-white bg-transparent"
           onClick={handleExport}
           disabled={!sessionId || exporting}
         >
           <Download className="h-4 w-4" />
           {exporting ? "Generating…" : "Export"}
         </Button>
-
       </div>
     </nav>
   );

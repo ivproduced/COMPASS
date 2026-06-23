@@ -36,7 +36,7 @@ const Landing = () => {
         <h1 className="font-sans font-bold text-[48px] leading-tight text-foreground mb-2">
           COMPASS
         </h1>
-        <p className="font-sans font-normal text-[20px] text-[#64748B] mb-3">
+        <p className="font-sans font-normal text-[20px] text-muted-foreground mb-3">
           FedRAMP Compliance Voice Agent
         </p>
         <p className="text-muted-foreground text-base text-center max-w-md mb-8">

@@ -1,17 +1,17 @@
 import { useSession } from "@/context/SessionContext";
 
 const RISK_CONFIG: Record<string, { emoji: string; bg: string; label: string }> = {
-  critical: { emoji: "🔴", bg: "#EF4444", label: "CRITICAL" },
-  high:     { emoji: "🟠", bg: "#F97316", label: "HIGH" },
-  moderate: { emoji: "🟡", bg: "#F59E0B", label: "MODERATE" },
-  low:      { emoji: "🟢", bg: "#22C55E", label: "LOW" },
+  critical: { emoji: "🔴", bg: "#b50909", label: "CRITICAL" },
+  high:     { emoji: "🟠", bg: "#8b3a00", label: "HIGH" },
+  moderate: { emoji: "🟡", bg: "#936f38", label: "MODERATE" },
+  low:      { emoji: "🟢", bg: "#1a7f37", label: "LOW" },
 };
 
 const BORDER: Record<string, string> = {
-  critical: "#EF4444",
-  high: "#F97316",
-  moderate: "#F59E0B",
-  low: "#22C55E",
+  critical: "#b50909",
+  high: "#8b3a00",
+  moderate: "#936f38",
+  low: "#1a7f37",
 };
 
 const GapsTab = () => {
@@ -45,7 +45,7 @@ const GapsTab = () => {
     <div className="space-y-5">
       <div>
         <h3 className="text-[15px] font-semibold text-foreground">Gap Analysis</h3>
-        <p className="text-[13px] text-[#64748B] mt-1">{gaps.length} gap{gaps.length !== 1 ? "s" : ""} found</p>
+        <p className="text-[13px] text-muted-foreground mt-1">{gaps.length} gap{gaps.length !== 1 ? "s" : ""} found</p>
       </div>
 
       <div className="flex gap-2">
@@ -69,7 +69,7 @@ const GapsTab = () => {
       <div className="space-y-3">
         {sorted.map((gap) => {
           const lvl = gap.risk_level?.toLowerCase();
-          const borderColor = BORDER[lvl] ?? "#64748B";
+          const borderColor = BORDER[lvl] ?? "#71767a";
           const cfg = RISK_CONFIG[lvl] ?? { emoji: "⚪", label: lvl?.toUpperCase() };
           return (
             <div

@@ -24,13 +24,24 @@ class Settings(BaseSettings):
     google_cloud_location: str = "us-central1"
 
     # -------------------------------------------------------------------
-    # Gemini
+    # LLM Provider selection
+    # -------------------------------------------------------------------
+    llm_provider: str = "gemini"          # "gemini" | "openai"
+
+    # -------------------------------------------------------------------
+    # Gemini (used when llm_provider = "gemini")
     # -------------------------------------------------------------------
     gemini_model: str = "gemini-2.5-pro"
     gemini_live_model: str = "gemini-2.5-flash-native-audio-latest"  # Live API model available for this API key
     gemini_voice: str = "Kore"
     google_api_key: str = ""              # Set for API-key mode (Developer API key)
     gemini_use_vertex: bool = False       # False → use Developer API key (Vertex Live API not yet GA)
+
+    # -------------------------------------------------------------------
+    # OpenAI (used when llm_provider = "openai")
+    # -------------------------------------------------------------------
+    openai_api_key: str = ""              # Required when llm_provider = "openai"
+    openai_model: str = "gpt-4o"         # Text/reasoning model for sidecar + chat
 
     # -------------------------------------------------------------------
     # Firestore

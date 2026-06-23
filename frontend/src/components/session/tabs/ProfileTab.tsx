@@ -43,7 +43,7 @@ const DATA_TYPE_LABELS: Record<string, string> = {
 const formatDataType = (tag: string) => DATA_TYPE_LABELS[tag] ?? tag;
 
 const Label = ({ children }: { children: React.ReactNode }) => (
-  <p className="text-xs font-medium text-[#64748B] uppercase tracking-wider">{children}</p>
+  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{children}</p>
 );
 
 const Field = ({ label, value }: { label: string; value: string }) => (
@@ -127,7 +127,7 @@ const ProfileTab = () => {
         onDragOver={(e) => e.preventDefault()}
         onClick={() => fileRef.current?.click()}
       >
-        <p className="text-[13px] text-[#64748B]">📎 Drop architecture diagram here</p>
+        <p className="text-[13px] text-muted-foreground">📎 Drop architecture diagram here</p>
         <input
           ref={fileRef}
           type="file"

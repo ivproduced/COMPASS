@@ -53,7 +53,7 @@ const VoicePanel = () => {
           {[14, 22, 28, 18, 10].map((h, i) => (
             <span
               key={i}
-              className="w-1 rounded-full bg-[#06B6D4]"
+              className="w-1 rounded-full bg-primary"
               style={{
                 height: h,
                 animation: `wave 1s ease-in-out ${i * 0.15}s infinite alternate`,
@@ -65,7 +65,7 @@ const VoicePanel = () => {
 
       <span
         className={`text-[11px] font-medium ${
-          isConnected ? "text-[#22C55E]" : "text-[#64748B]"
+          isConnected ? "text-[#1a7f37]" : "text-muted-foreground"
         }`}
       >
         {isConnected ? "● Live" : "○ Off"}
@@ -79,7 +79,7 @@ const VoicePanel = () => {
               <span
                 className={`w-2.5 h-2.5 rounded-full ${
                   s === "done"
-                    ? "bg-[#22C55E]"
+                    ? "bg-[#1a7f37]"
                     : s === "active"
                     ? "bg-primary animate-pulse"
                     : "border border-border bg-transparent"

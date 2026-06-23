@@ -35,20 +35,20 @@ const TranscriptPanel = () => {
             return (
               <div key={idx} className={`max-w-[75%] ${isCompass ? "" : "ml-auto"}`}>
                 <p
-                  className={`text-xs font-medium text-[#64748B] mb-1 ${
+                  className={`text-xs font-medium text-muted-foreground mb-1 ${
                     isCompass ? "" : "text-right"
                   }`}
                 >
                   {isCompass ? `COMPASS · ${time}` : `You · ${time}`}
                   {entry.tag && (
-                    <span className="text-[#06B6D4] ml-1">{entry.tag}</span>
+                    <span className="text-primary ml-1">{entry.tag}</span>
                   )}
                 </p>
                 <div
                   className={`rounded-lg p-4 ${
                     isCompass
                       ? "bg-card rounded-tl-sm"
-                      : "bg-[#1B2A4A] rounded-tr-sm"
+                      : "bg-primary/10 border border-primary/20 rounded-tr-sm"
                   }`}
                 >
                   <p className="text-sm text-foreground leading-relaxed">
@@ -64,12 +64,12 @@ const TranscriptPanel = () => {
 
       <div className="px-6 py-3 border-t border-border space-y-2">
         {isListening && (
-          <p className="text-[13px] italic text-[#64748B]">
+          <p className="text-[13px] italic text-muted-foreground">
             ● COMPASS is listening…
           </p>
         )}
         {!isConnected && sessionId && !isListening && (
-          <p className="text-[12px] text-[#64748B]">
+          <p className="text-[12px] text-muted-foreground">
             Voice unavailable — type below to chat with COMPASS.
           </p>
         )}

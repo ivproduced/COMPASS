@@ -85,7 +85,7 @@ const Dashboard = () => {
               <div className="font-bold text-[36px] leading-tight text-foreground">
                 {s.value}
               </div>
-              <div className="text-sm text-[#64748B] mt-1">{s.label}</div>
+              <div className="text-sm text-muted-foreground mt-1">{s.label}</div>
             </div>
           ))}
         </div>

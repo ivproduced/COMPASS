@@ -13,10 +13,10 @@ const filters = ["All", "Implemented", "Partial", "Planned", "Gap"] as const;
 type Status = "impl" | "partial" | "gap" | "planned";
 
 const statusConfig: Record<Status, { icon: string; label: string; color: string }> = {
-  impl: { icon: "●", label: "Impl", color: "#22C55E" },
-  partial: { icon: "◐", label: "Part", color: "#F59E0B" },
-  gap: { icon: "✗", label: "Gap", color: "#EF4444" },
-  planned: { icon: "◯", label: "Plan", color: "#3B82F6" },
+  impl: { icon: "●", label: "Impl", color: "#1a7f37" },
+  partial: { icon: "◐", label: "Part", color: "#936f38" },
+  gap: { icon: "✗", label: "Gap", color: "#b50909" },
+  planned: { icon: "◯", label: "Plan", color: "#005ea2" },
 };
 
 const FAMILY_NAMES: Record<string, string> = {
@@ -111,7 +111,7 @@ const ControlsTab = () => {
     <>
       <div className="flex items-center justify-between">
         <h3 className="text-[15px] font-semibold text-foreground">Control Mappings</h3>
-        <span className="text-[13px] text-[#64748B]">
+        <span className="text-[13px] text-muted-foreground">
           {controls.length} / {total || "?"} mapped
         </span>
       </div>
@@ -124,7 +124,7 @@ const ControlsTab = () => {
               style={{ width: `${pct}%` }}
             />
           </div>
-          <p className="text-[12px] text-[#64748B]">{pct}% coverage</p>
+          <p className="text-[12px] text-muted-foreground">{pct}% coverage</p>
         </div>
       )}
 
@@ -177,7 +177,7 @@ const ControlsTab = () => {
                       <div key={ctrl.control_id}>
                         <div
                           className={`flex items-center h-9 pl-4 text-[13px] hover:bg-background rounded-sm transition-colors ${
-                            isGap ? "border-l-2 border-[#EF4444]" : ""
+                            isGap ? "border-l-2 border-[#b50909]" : ""
                           }`}
                         >
                           <span style={{ color: cfg.color }} className="mr-2">
@@ -197,7 +197,7 @@ const ControlsTab = () => {
                           </span>
                         </div>
                         {isGap && ctrl.implementation_description && (
-                          <p className="pl-8 text-[12px] italic text-[#EF4444] pb-1">
+                          <p className="pl-8 text-[12px] italic text-[#b50909] pb-1">
                             {ctrl.implementation_description}
                           </p>
                         )}
