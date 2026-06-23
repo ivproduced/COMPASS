@@ -159,6 +159,24 @@ TOOL_SCHEMAS: list[dict] = [
         },
     },
     {
+        "name": "validate_oscal",
+        "description": "Validate an OSCAL JSON document and report schema/required-field issues.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "content": {
+                    "type": "object",
+                    "description": "OSCAL JSON content to validate",
+                },
+                "document_type": {
+                    "type": "string",
+                    "enum": ["ssp", "poam", "assessment_results"],
+                },
+            },
+            "required": ["content"],
+        },
+    },
+    {
         "name": "threat_lookup",
         "description": "Query MITRE ATLAS AI/ML threat mappings to find mitigating controls.",
         "parameters": {
