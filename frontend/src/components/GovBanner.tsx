@@ -10,7 +10,7 @@ const GovBanner = () => {
 
   return (
     <section
-      className="w-full bg-[#f0f0f0] border-b border-[#dfe1e2] text-[#1b1b1b]"
+      className="w-full bg-muted border-b border-border text-foreground"
       aria-label="Official website of the United States government"
     >
       <div className="max-w-[1200px] mx-auto px-4">
