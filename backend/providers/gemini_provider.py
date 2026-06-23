@@ -158,7 +158,8 @@ class GeminiProvider(LLMProvider):
                         if event:
                             events.append(event)
 
-                        contents.append(candidate.content)
+                        if candidate.content not in contents:
+                            contents.append(candidate.content)
                         contents.append(
                             types.Content(
                                 role="user",
