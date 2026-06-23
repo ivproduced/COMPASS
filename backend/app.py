@@ -529,10 +529,9 @@ Example: user says "MFA is NOT implemented" → current_implementation="MFA is N
         for tc in tool_calls:
             logger.info("Sidecar tool: %s(%s)", tc.name, list(tc.args.keys()))
             result = await execute_tool(tc.name, tc.args, session_id)
-            logger.info("Sidecar result keys: %s, is_gap=%s, count=%s",
+            logger.info("Sidecar result: %s, has_result=%s",
                         "redacted",
-                        result.get("is_gap"),
-                        result.get("count"))
+                        result is not None)
             event = result.pop("_event", None)
             if event:
                 try:
