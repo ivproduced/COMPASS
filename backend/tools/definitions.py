@@ -6,8 +6,8 @@ Each entry is an OpenAI-compatible tool dict:
 Both the Gemini and OpenAI providers import this list and convert to their
 native formats. The Live WebSocket (Gemini native-audio) does NOT use these —
 it intentionally omits tool declarations because native-audio Live models only
-support bidiGenerateContent. Tools run via the sidecar generate_content call.
-"""
+support bidiGenerateContent. Tools are invoked via the provider abstraction
+(e.g., llm_provider.force_tool_call/chat_with_tools) in backend/app.py.
 
 TOOL_SCHEMAS: list[dict] = [
     {
