@@ -33,7 +33,7 @@ const TopNav = ({ pageTitle, editable = false, sessionId }: TopNavProps) => {
       style={{ backgroundColor: "hsl(var(--header-bg))", color: "hsl(var(--header-fg))" }}
     >
       {/* Left: Wordmark */}
-      <button onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer">
+      <button type="button" onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer">
         <Compass className="h-5 w-5 text-white" />
         <span className="text-white font-semibold text-base tracking-tight">
           COMPASS
