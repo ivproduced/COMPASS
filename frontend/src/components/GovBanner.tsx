@@ -43,7 +43,7 @@ const GovBanner = () => {
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="flex items-center gap-1 text-[12px] font-medium text-[#005ea2] underline decoration-dotted hover:text-[#1a4480] focus:outline-none"
+            className="flex items-center gap-1 text-[12px] font-medium text-[#005ea2] underline decoration-dotted hover:text-[#1a4480] focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             aria-expanded={expanded}
           >
             Here's how you know
